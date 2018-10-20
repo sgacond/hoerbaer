@@ -1,0 +1,56 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "menuconfig",
+            "type": "shell",
+            "command": "make menuconfig",
+			"options": {
+				"cwd": "${workspaceFolder}/firmware"
+			},
+            "problemMatcher": []
+        },
+        {
+            "label": "make",
+            "type": "shell",
+            "command": "make -j5",
+			"options": {
+				"cwd": "${workspaceFolder}/firmware"
+			},
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "flash",
+            "type": "shell",
+            "command": "make flash monitor",
+			"options": {
+				"cwd": "${workspaceFolder}/firmware"
+			},
+            "problemMatcher": []
+        },
+        {
+            "label": "monitor",
+            "type": "shell",
+            "command": "make monitor",
+			"options": {
+				"cwd": "${workspaceFolder}/firmware"
+			},
+            "problemMatcher": []
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "make clean",
+			"options": {
+				"cwd": "${workspaceFolder}/firmware"
+			},
+            "problemMatcher": []
+        }
+    ]
+}
