@@ -1,11 +1,14 @@
 #include <iostream>
 #include <stdexcept>
+#include <memory>
 
 #include "freertos/FreeRTOS.h"
 #include "driver/i2s.h"
 #include "driver/i2c.h"
 
 #include "../../Configuration.h"
+#include "IAudioFile.h"
+#include "WavFile.h"
 #include "AudioPlayer.h"
 
 AudioPlayer::AudioPlayer(std::shared_ptr<Storage> storage) {
@@ -78,8 +81,11 @@ void AudioPlayer::InitCodec() {
 
 void AudioPlayer::PlayFile(std::string filename) {
     
+    std::unique_ptr<IAudioFile> audioFile;
+
     if (0 == filename.compare ( filename.length() - 3, 3, "WAV")) {
         std::cout << "READ " << filename << std::endl;
+        audioFile = std::make_unique<WavFile>(this->storage);
     } 
     else if (0 == filename.compare ( filename.length() - 3, 3, "MP3")) {
         std::cout << "READ " << filename << std::endl;
@@ -87,6 +93,15 @@ void AudioPlayer::PlayFile(std::string filename) {
     else
         throw std::runtime_error("Unable to read" + filename + ". Only WAV or MP3 files are supported.");
 
+    auto audioFileInfo = audioFile->Load(filename);
+
+    std::cout << "Audio file loaded: " << audioFileInfo.pcmSamplerate 
+                              << " / " << audioFileInfo.pcmBits << "bit" 
+                              << " / " << audioFileInfo.durationSeconds << "s" << std::endl;
+
+    this->setSamplerateBits(audioFileInfo.pcmSamplerate, audioFileInfo.pcmBits);
+
+    this->play();
 }
 
 void AudioPlayer::setSamplerateBits(int sample_rate, int bits) {
@@ -100,4 +115,47 @@ void AudioPlayer::setSamplerateBits(int sample_rate, int bits) {
     esp_err_t ret = i2s_set_clk(I2S_NUM, sample_rate, (i2s_bits_per_sample_t)bits, (i2s_channel_t)2);
     if (ret != ESP_OK) throw std::runtime_error("Failed to adjust samplerate / bits.");
 
+}
+
+void AudioPlayer::play() {
+
+    // int offset = 36;
+    // while(offset < header->overall_size)
+    // {
+    //     printf("SEEK TO OFFSET: %d \n", offset);
+    //     fseek(f, offset, SEEK_SET);
+
+    //     struct data_chunk_header *chunk_header = malloc(sizeof(*chunk_header));
+    //     read_data_chunk_header(f, chunk_header);
+    //     offset += sizeof(*chunk_header);
+    //     fseek(f, offset, SEEK_SET);
+
+    //     if(strncmp(chunk_header->data_chunk_header, "data", 4) == 0)
+    //     {
+    //         printf("play chunk, %.*s, length %d \n", 4, chunk_header->data_chunk_header, chunk_header->data_size);
+
+    //         int buffer_size = 1440;
+    //         unsigned short *buffer = malloc(buffer_size);
+    //         size_t i2s_bytes_written = 0;
+
+    //         while(offset < chunk_header->data_size)
+    //         {
+    //             fread(buffer, buffer_size, 1, f);
+    //             i2s_write(I2S_NUM, buffer, buffer_size, &i2s_bytes_written, 100);
+
+    //             // delay time: 44100 samples per seconds, 1440 / 2 / 2 = 360 samples written, ca 8ms
+    //             vTaskDelay(8/portTICK_RATE_MS);
+
+    //             offset += buffer_size;
+    //             fseek(f, offset, SEEK_SET);
+    //         }
+
+    //         free(buffer);
+    //     }
+    //     else 
+    //     {
+    //         printf("skip chunk, %.*s, length %d \n", 4, chunk_header->data_chunk_header, chunk_header->data_size);
+    //         offset += chunk_header->data_size;
+    //     }
+    // }
 }

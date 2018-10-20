@@ -14,6 +14,7 @@ Storage::Storage() {
 }
 
 Storage::~Storage() {
+    esp_vfs_fat_sdmmc_unmount();
     std::cout << "Storage destructed." << std::endl;
 }
 

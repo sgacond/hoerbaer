@@ -14,7 +14,6 @@ public:
 
 private:
 	sdmmc_card_t* card;
-
 };
 
 #endif
