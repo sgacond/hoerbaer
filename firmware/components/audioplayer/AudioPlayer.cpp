@@ -101,23 +101,16 @@ void AudioPlayer::PlayFile(std::string filename) {
 
     this->setSamplerateBits(audioFileInfo.pcmSamplerate, audioFileInfo.pcmBits);
 
-    this->play();
-}
+    int bufferSize = 1440;
+    auto buffer = (unsigned short *) malloc(bufferSize);
 
-void AudioPlayer::setSamplerateBits(int sample_rate, int bits) {
+    while(!audioFile->Eof()) {
 
-    if(this->sample_rate == sample_rate && this->bits == bits)
-        return;
+        audioFile->StreamSamples(buffer, bufferSize);
 
-    this->sample_rate = sample_rate;
-    this->bits = bits;
+    }
 
-    esp_err_t ret = i2s_set_clk(I2S_NUM, sample_rate, (i2s_bits_per_sample_t)bits, (i2s_channel_t)2);
-    if (ret != ESP_OK) throw std::runtime_error("Failed to adjust samplerate / bits.");
-
-}
-
-void AudioPlayer::play() {
+    free(buffer);
 
     // int offset = 36;
     // while(offset < header->overall_size)
@@ -158,4 +151,17 @@ void AudioPlayer::play() {
     //         offset += chunk_header->data_size;
     //     }
     // }
+}
+
+void AudioPlayer::setSamplerateBits(int sample_rate, int bits) {
+
+    if(this->sample_rate == sample_rate && this->bits == bits)
+        return;
+
+    this->sample_rate = sample_rate;
+    this->bits = bits;
+
+    esp_err_t ret = i2s_set_clk(I2S_NUM, sample_rate, (i2s_bits_per_sample_t)bits, (i2s_channel_t)2);
+    if (ret != ESP_OK) throw std::runtime_error("Failed to adjust samplerate / bits.");
+
 }

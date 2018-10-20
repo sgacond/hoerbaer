@@ -22,6 +22,9 @@ struct data_chunk_header {
 
 WavFile::WavFile(std::shared_ptr<Storage> storage) {
     this->storage = storage;
+    this->fp = 0;
+    this->curFileOffset = 0;
+    this->curChunkRemaining = 0;
 }
 
 WavFile::~WavFile() {
@@ -47,21 +50,55 @@ AudioFileInfo WavFile::Load(std::string filename) {
     float durationSeconds = (float) header.overall_size / header.byterate;
     std::cout << "WAV: Approx.Duration in seconds: " << durationSeconds << std::endl;
 
+    this->shiftOffsetAndSeek(sizeof(header));
+    this->curChunkRemaining = 0;
+
     return (AudioFileInfo) { header.sample_rate, header.bits_per_sample, durationSeconds };
 }
 
 void WavFile::SeekToSeconds(float sec) {
+    if(!this->fp) throw std::runtime_error("Operation failed. Load file first.");
+
     throw "NOT IMPLEMENTED YET";
 }
 
 size_t WavFile::StreamSamples(void * buffer, size_t bufferSize) {
+    if(!this->fp) throw std::runtime_error("Operation failed. Load file first.");
+
+    if(this->curChunkRemaining == 0) {
+        struct data_chunk_header ch;
+        fread(&ch, sizeof(ch), 1, this->fp);
+        // TODO: das noch was falsches...? shiften wir falsch?
+        std::cout << "WAV CHUNK Data Marker: " << ch.data_chunk_header << std::endl;
+        std::cout << "WAV CHUNK Size of data chunk: " << ch.data_size << std::endl;
+        this->curChunkRemaining = ch.data_size;
+        this->shiftOffsetAndSeek(sizeof(ch));
+    }
 
     // TODO: intern mitführen welcher wieviel bytes schon gelesen im ganzen file, gelesen im aktuellen, etc.
     //       offset mitfahren.
 
-    return 0;
+    // dummy read...
+    int read = bufferSize;
+
+    // avoid reading over a chunk border.
+    if(read > this->curChunkRemaining)
+        read = this->curChunkRemaining;
+
+    this->curChunkRemaining -= read;
+    this->shiftOffsetAndSeek(read);
+
+    std::cout << "PLAY: " << this->curFileOffset << " REM: " << this->curChunkRemaining << std::endl;
+
+    return read;
 }
 
 bool WavFile::Eof() {
-    return true;
+    if(!this->fp) throw std::runtime_error("Operation failed. Load file first.");
+    return feof(this->fp) > 0;
+}
+
+void WavFile::shiftOffsetAndSeek(size_t n) {
+    this->curFileOffset += n;
+    fseek(this->fp, n, SEEK_CUR);
 }

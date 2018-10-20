@@ -16,8 +16,11 @@ class WavFile : public IAudioFile
         virtual size_t StreamSamples(void * buffer, size_t bufferSize);
         virtual bool Eof();
     private:
+        void shiftOffsetAndSeek(size_t n);
     	std::shared_ptr<Storage> storage;
         FILE* fp;
+        size_t curFileOffset;
+        size_t curChunkRemaining;
 };
 
 #endif

@@ -17,7 +17,6 @@ private:
     int sample_rate;
     int bits;
     void setSamplerateBits(int sample_rate, int bits);
-    void play();
 };
 
 #endif

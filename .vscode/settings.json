@@ -22,6 +22,7 @@
         "__string": "cpp",
         "deque": "cpp",
         "future": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "istream": "cpp"
     }
 }
