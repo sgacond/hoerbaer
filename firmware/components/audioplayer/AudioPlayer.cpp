@@ -84,11 +84,11 @@ void AudioPlayer::PlayFile(std::string filename) {
     
     std::unique_ptr<IAudioFile> audioFile;
 
-    if (0 == filename.compare ( filename.length() - 3, 3, "WAV")) {
+    if (0 == filename.compare(filename.length() - 3, 3, "WAV")) {
         std::cout << "READ " << filename << std::endl;
         audioFile = std::make_unique<WavFile>(this->storage);
     } 
-    else if (0 == filename.compare ( filename.length() - 3, 3, "MP3")) {
+    else if (0 == filename.compare(filename.length() - 3, 3, "MP3")) {
         std::cout << "READ " << filename << std::endl;
     }
     else
@@ -98,6 +98,7 @@ void AudioPlayer::PlayFile(std::string filename) {
 
     std::cout << "Audio file loaded: " << audioFileInfo.pcmSamplerate 
                               << " / " << audioFileInfo.pcmBits << "bit" 
+                              << " / " << audioFileInfo.pcmChannels << "ch"
                               << " / " << audioFileInfo.durationSeconds << "s" << std::endl;
 
     this->setSamplerateBits(audioFileInfo.pcmSamplerate, audioFileInfo.pcmBits);
@@ -106,14 +107,10 @@ void AudioPlayer::PlayFile(std::string filename) {
     auto buffer = (unsigned short *) malloc(bufferSize);
 
     while(!audioFile->Eof()) {
-
         samplesRead = audioFile->StreamSamples(buffer, bufferSize);
         i2s_write(I2S_NUM, buffer, samplesRead, &i2s_bytes_written, 100);
-
-        // delay time: 44100 samples per seconds, 1440 / 2 / 2 = 360 samples written, ca 8ms
-        // TODO: CALC
-        vTaskDelay(8/portTICK_RATE_MS);
-
+        // delay time: braucht's das? glaub nicht.
+        // vTaskDelay(8/portTICK_RATE_MS);
     }
 
     free(buffer);
@@ -121,7 +118,8 @@ void AudioPlayer::PlayFile(std::string filename) {
 
 void AudioPlayer::SetVolume(float vol) {
     uint8_t addr = CODEC_I2C_ADDR;
-    uint8_t volScaled = (uint8_t)(vol * CODEC_MAX_VOL);
+
+    uint8_t volScaled = (uint8_t)((vol * CODEC_MAX_VOL) + 0.5f);
 
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
@@ -134,7 +132,7 @@ void AudioPlayer::SetVolume(float vol) {
     i2c_cmd_link_delete(cmd);
 
     if (ret != ESP_OK) throw std::runtime_error("Failed to write i2c volume.");
-    std::cout << "AUDIO: Writen Volume: " << volScaled << "/" << CODEC_MAX_VOL << std::endl;
+    std::cout << "AUDIO: Writen Volume: " << static_cast<int>(volScaled) << "/" << CODEC_MAX_VOL << std::endl;
 }
 
 void AudioPlayer::setSamplerateBits(int sample_rate, int bits) {

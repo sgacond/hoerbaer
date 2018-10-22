@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+
 #include "WavFile.h"
 
 struct wave_header {
@@ -91,7 +92,7 @@ AudioFileInfo WavFile::Load(std::string filename) {
     float durationSeconds = (float) riffHeader.overall_size / formatHeader.byterate;
     std::cout << "WAV: Approx.Duration in seconds: " << durationSeconds << std::endl;
 
-    return (AudioFileInfo) { formatHeader.sample_rate, formatHeader.bits_per_sample, durationSeconds };
+    return (AudioFileInfo) { formatHeader.sample_rate, formatHeader.bits_per_sample, formatHeader.channels, durationSeconds };
 
 }
 
@@ -140,13 +141,3 @@ bool WavFile::Eof() {
     if(!this->fp) throw std::runtime_error("Operation failed. Load file first.");
     return this->curFileOffset == this->fileSize;
 }
-
-// void WavFile::shiftOffsetAndSeek(size_t n) {
-//     this->curFileOffset += n;
-//     std::cout << "SHIFT " << n << " TO " << this->curFileOffset << std::endl;
-//     if(this->curFileOffset > this->fileSize) {
-//         this->curFileOffset = this->fileSize;
-//         std::cout << "WAF FILE End of file, shifting to size." << std::endl;
-//     }
-//     fseek(this->fp, n, SEEK_CUR);
-// }

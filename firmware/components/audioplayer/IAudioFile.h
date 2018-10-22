@@ -4,6 +4,7 @@
 typedef struct AudioFileInfo { 
     uint32_t pcmSamplerate;
     uint32_t pcmBits;
+    uint16_t pcmChannels;
     float durationSeconds;
 } AudioFileInfo;
 

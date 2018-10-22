@@ -17,6 +17,6 @@
 #define PIN_I2C_SDA         GPIO_NUM_21
 #define PIN_I2C_SCL         GPIO_NUM_22
 #define CODEC_I2C_ADDR      0x4B
-#define CODEC_MAX_VOL       63
+#define CODEC_MAX_VOL       63.0f
 
 #endif
