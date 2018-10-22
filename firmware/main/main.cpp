@@ -18,7 +18,8 @@ public:
 
         auto audioPlayer = make_unique<AudioPlayer>(move(storage));
         audioPlayer->InitCodec();
-        audioPlayer->PlayFile("2.WAV");
+        audioPlayer->SetVolume(0.5f);
+        audioPlayer->PlayFile("3.WAV");
     }
 };
 

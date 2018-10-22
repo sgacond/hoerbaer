@@ -19,6 +19,7 @@ class WavFile : public IAudioFile
         void shiftOffsetAndSeek(size_t n);
     	std::shared_ptr<Storage> storage;
         FILE* fp;
+        size_t fileSize;
         size_t curFileOffset;
         size_t curChunkRemaining;
 };

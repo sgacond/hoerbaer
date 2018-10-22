@@ -11,6 +11,7 @@ public:
 	virtual ~AudioPlayer();
     void InitCodec();
     void PlayFile(std::string filename);
+    void SetVolume(float vol);
 
 private:
 	std::shared_ptr<Storage> storage;

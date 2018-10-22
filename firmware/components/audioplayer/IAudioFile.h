@@ -2,8 +2,8 @@
 #define IAUDIOFILE_H_
 
 typedef struct AudioFileInfo { 
-    int pcmSamplerate;
-    int pcmBits;
+    uint32_t pcmSamplerate;
+    uint32_t pcmBits;
     float durationSeconds;
 } AudioFileInfo;
 

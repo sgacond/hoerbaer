@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <memory>
+#include <climits>
 
 #include "freertos/FreeRTOS.h"
 #include "driver/i2s.h"
@@ -101,56 +102,39 @@ void AudioPlayer::PlayFile(std::string filename) {
 
     this->setSamplerateBits(audioFileInfo.pcmSamplerate, audioFileInfo.pcmBits);
 
-    int bufferSize = 1440;
+    size_t bufferSize = 1440, samplesRead = 0, i2s_bytes_written = 0;
     auto buffer = (unsigned short *) malloc(bufferSize);
 
     while(!audioFile->Eof()) {
 
-        audioFile->StreamSamples(buffer, bufferSize);
+        samplesRead = audioFile->StreamSamples(buffer, bufferSize);
+        i2s_write(I2S_NUM, buffer, samplesRead, &i2s_bytes_written, 100);
+
+        // delay time: 44100 samples per seconds, 1440 / 2 / 2 = 360 samples written, ca 8ms
+        // TODO: CALC
+        vTaskDelay(8/portTICK_RATE_MS);
 
     }
 
     free(buffer);
+}
 
-    // int offset = 36;
-    // while(offset < header->overall_size)
-    // {
-    //     printf("SEEK TO OFFSET: %d \n", offset);
-    //     fseek(f, offset, SEEK_SET);
+void AudioPlayer::SetVolume(float vol) {
+    uint8_t addr = CODEC_I2C_ADDR;
+    uint8_t volScaled = (uint8_t)(vol * CODEC_MAX_VOL);
 
-    //     struct data_chunk_header *chunk_header = malloc(sizeof(*chunk_header));
-    //     read_data_chunk_header(f, chunk_header);
-    //     offset += sizeof(*chunk_header);
-    //     fseek(f, offset, SEEK_SET);
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, addr << 1 | I2C_MASTER_WRITE, 0x1);
+    i2c_master_write_byte(cmd, volScaled, 0x1);
+    i2c_master_stop(cmd);
 
-    //     if(strncmp(chunk_header->data_chunk_header, "data", 4) == 0)
-    //     {
-    //         printf("play chunk, %.*s, length %d \n", 4, chunk_header->data_chunk_header, chunk_header->data_size);
+    esp_err_t ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS);
 
-    //         int buffer_size = 1440;
-    //         unsigned short *buffer = malloc(buffer_size);
-    //         size_t i2s_bytes_written = 0;
+    i2c_cmd_link_delete(cmd);
 
-    //         while(offset < chunk_header->data_size)
-    //         {
-    //             fread(buffer, buffer_size, 1, f);
-    //             i2s_write(I2S_NUM, buffer, buffer_size, &i2s_bytes_written, 100);
-
-    //             // delay time: 44100 samples per seconds, 1440 / 2 / 2 = 360 samples written, ca 8ms
-    //             vTaskDelay(8/portTICK_RATE_MS);
-
-    //             offset += buffer_size;
-    //             fseek(f, offset, SEEK_SET);
-    //         }
-
-    //         free(buffer);
-    //     }
-    //     else 
-    //     {
-    //         printf("skip chunk, %.*s, length %d \n", 4, chunk_header->data_chunk_header, chunk_header->data_size);
-    //         offset += chunk_header->data_size;
-    //     }
-    // }
+    if (ret != ESP_OK) throw std::runtime_error("Failed to write i2c volume.");
+    std::cout << "AUDIO: Writen Volume: " << volScaled << "/" << CODEC_MAX_VOL << std::endl;
 }
 
 void AudioPlayer::setSamplerateBits(int sample_rate, int bits) {
