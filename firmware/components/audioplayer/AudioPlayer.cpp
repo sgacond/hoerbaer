@@ -10,6 +10,7 @@
 #include "../../Configuration.h"
 #include "IAudioFile.h"
 #include "WavFile.h"
+#include "Mp3File.h"
 #include "AudioPlayer.h"
 
 AudioPlayer::AudioPlayer(std::shared_ptr<Storage> storage) {
@@ -90,6 +91,7 @@ void AudioPlayer::PlayFile(std::string filename) {
     } 
     else if (0 == filename.compare(filename.length() - 3, 3, "MP3")) {
         std::cout << "READ " << filename << std::endl;
+        audioFile = std::make_unique<Mp3File>(this->storage);
     }
     else
         throw std::runtime_error("Unable to read" + filename + ". Only WAV or MP3 files are supported.");
@@ -99,11 +101,12 @@ void AudioPlayer::PlayFile(std::string filename) {
     std::cout << "Audio file loaded: " << audioFileInfo.pcmSamplerate 
                               << " / " << audioFileInfo.pcmBits << "bit" 
                               << " / " << audioFileInfo.pcmChannels << "ch"
-                              << " / " << audioFileInfo.durationSeconds << "s" << std::endl;
+                              << " / " << audioFileInfo.durationSeconds << "s"
+                              << " / " << audioFileInfo.recommendedBufferSize << "bytes buffer" << std::endl;
 
     this->setSamplerateBits(audioFileInfo.pcmSamplerate, audioFileInfo.pcmBits);
 
-    size_t bufferSize = 1440, samplesRead = 0, i2s_bytes_written = 0;
+    size_t bufferSize = audioFileInfo.recommendedBufferSize, samplesRead = 0, i2s_bytes_written = 0;
     auto buffer = (unsigned short *) malloc(bufferSize);
 
     while(!audioFile->Eof()) {

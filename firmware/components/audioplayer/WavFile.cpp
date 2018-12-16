@@ -3,6 +3,8 @@
 
 #include "WavFile.h"
 
+#define WAV_DEFAULT_BUFFER_SIZE 1440
+
 struct wave_header {
 	char riff[4];						// RIFF string
 	uint32_t overall_size; 				// overall size of file in bytes
@@ -92,7 +94,7 @@ AudioFileInfo WavFile::Load(std::string filename) {
     float durationSeconds = (float) riffHeader.overall_size / formatHeader.byterate;
     std::cout << "WAV: Approx.Duration in seconds: " << durationSeconds << std::endl;
 
-    return (AudioFileInfo) { formatHeader.sample_rate, formatHeader.bits_per_sample, formatHeader.channels, durationSeconds };
+    return (AudioFileInfo) { formatHeader.sample_rate, formatHeader.bits_per_sample, formatHeader.channels, durationSeconds, WAV_DEFAULT_BUFFER_SIZE };
 
 }
 

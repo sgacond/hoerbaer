@@ -1,0 +1,38 @@
+/*
+8B6F5F
+A48254
+A5924F
+F0BD1D
+ACC5D9
+*/
+
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+body {
+  background-color: #A48254;
+  color: #4F4336;
+  box-sizing: border-box;
+}
+
+.App {
+  background-color: #8B6F5F;
+  max-width: 800px;
+  width: 90%;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 100vh;
+}
+
+h1 {
+  margin-top: 0;
+  padding-top: 1rem;
+}
+
+h2 {
+}

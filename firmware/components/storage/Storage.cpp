@@ -23,11 +23,13 @@ void Storage::Init() {
     std::cout << "Initializing SD card." << std::endl;
 
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    host.slot = SPI_HOST_SDCARD;
     sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
     slot_config.gpio_miso = PIN_SDCARD_MISO;
     slot_config.gpio_mosi = PIN_SDCARD_MOSI;
     slot_config.gpio_sck  = PIN_SDCARD_CLK;
     slot_config.gpio_cs   = PIN_SDCARD_CS;
+    slot_config.dma_channel = 2; // 1 is used by kolbans cpp wrapper as default.
     // This initializes the slot without card detect (CD) and write protect (WP) signals.
     // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
 
