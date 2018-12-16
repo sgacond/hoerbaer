@@ -2,3 +2,4 @@ build/
 sdkconfig.old
 
 webui/node_modules
+browse.vc*
