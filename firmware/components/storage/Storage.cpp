@@ -39,7 +39,7 @@ void Storage::Init() {
         .allocation_unit_size = 16 * 1024
     };
 
-    esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card);
+    esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &this->card);
 
     if (ret == ESP_FAIL)
         throw std::runtime_error("Failed to mount filesystem. Use only FAT32.");
@@ -47,7 +47,7 @@ void Storage::Init() {
         throw std::runtime_error("Failed to initialize the card.");
 
     // Card has been initialized, print its properties
-    sdmmc_card_print_info(stdout, card);
+    sdmmc_card_print_info(stdout, this->card);
 
 }
 

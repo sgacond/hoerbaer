@@ -13,12 +13,13 @@ static const char* LOG_TAG = "HBI_SHIFT";
 using namespace std;
 using namespace ESP32CPP;
 
-HBIShift::HBIShift(QueueHandle_t queue) {
+HBIShift::HBIShift(QueueHandle_t shiftToHBIQUeue) {
     // init shift register stuff...
     this->setStackSize(2048); // NOT YET CALIBRATED TO LIMIT - can be decreased i think
     this->setPriority(TSK_PRIO_HBISHIFT);
     this->setName("HBI SHIFT");
-    this->queue = queue;
+    this->shiftToHBIQUeue = shiftToHBIQUeue;
+    this->powLedState = 0;
 }
 
 HBIShift::~HBIShift() {
@@ -74,13 +75,13 @@ void HBIShift::run(void *pvParameters) {
 
             if((diffIns & MASK_PAW_INS) > 0 && ((ins & MASK_PAW_INS) < (lastIns & MASK_PAW_INS))) {
                 // PAW DOWN - send this
-                if(xQueueSend(this->queue, &diffIns, 5 / portTICK_PERIOD_MS) != pdPASS)
+                if(xQueueSend(this->shiftToHBIQUeue, &diffIns, 5 / portTICK_PERIOD_MS) != pdPASS)
                     ESP_LOGW(LOG_TAG, "Event queue full!");
             }
             else if(diffIns & MASK_ENCODER_INS) {
                 // ENCODER MOVE - send diff / last / cur in one value (begin with 0xFF to mark)
-                diffIns = (0xFF << 24) | ((diffIns & 0xFF) << 16) | ((lastIns & 0xFF) << 8) | ((ins & 0xFF));
-                if(xQueueSend(this->queue, &diffIns, 5 / portTICK_PERIOD_MS) != pdPASS)
+                diffIns = (0xFF << 24) | ((diffIns & MASK_ENCODER_INS) << 16) | ((lastIns & MASK_ENCODER_INS) << 8) | ((ins & MASK_ENCODER_INS));
+                if(xQueueSend(this->shiftToHBIQUeue, &diffIns, 5 / portTICK_PERIOD_MS) != pdPASS)
                     ESP_LOGW(LOG_TAG, "Event queue full!");
             }
 

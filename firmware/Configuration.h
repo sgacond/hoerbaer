@@ -24,12 +24,14 @@
 #define PIN_I2C_SDA         GPIO_NUM_21
 #define PIN_I2C_SCL         GPIO_NUM_22
 #define CODEC_I2C_ADDR      0x4B
-#define CODEC_MAX_VOL       63.0f
+#define CODEC_MAX_VOL       63
 
 #define TSK_PRIO_HBI        configMAX_PRIORITIES - 4
 #define TSK_PRIO_HBISHIFT   configMAX_PRIORITIES - 1
 #define TIME_HBISHIFT_OP_MS 20
 #define QUEUE_LEN_HBISHIFT  10
+#define QUEUE_LEN_HBICMD    10
+#define CMD_QUEUE_BLOCK_MS  200
 #define SPI_HOST_HBI        HSPI_HOST
 #define PIN_HBI_MISO        GPIO_NUM_12
 #define PIN_HBI_MOSI        GPIO_NUM_13
