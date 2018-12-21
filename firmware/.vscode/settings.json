@@ -20,6 +20,7 @@
         "__bit_reference": "cpp",
         "__string": "cpp",
         "deque": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "istream": "cpp"
     }
 }

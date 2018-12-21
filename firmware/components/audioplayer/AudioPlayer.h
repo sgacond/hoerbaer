@@ -4,6 +4,7 @@
 #include <memory>
 #include <stdio.h>
 #include "../storage/Storage.h"
+#include "PlaybackBase.h"
 
 class AudioPlayer {
 public:
@@ -12,9 +13,11 @@ public:
     void InitCodec();
     void PlayFile(std::string filename);
     void SetVolume(uint8_t vol);
+    void Stop();
 
 private:
 	std::shared_ptr<Storage> storage;
+    std::unique_ptr<PlaybackBase> audioPlayback;
     int sample_rate;
     int bits;
     void setSamplerateBits(int sample_rate, int bits);

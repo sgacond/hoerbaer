@@ -1,26 +1,30 @@
-#ifndef WAVFILE_H_
-#define WAVFILE_H_
+#ifndef WavPlayback_H_
+#define WavPlayback_H_
 
 #include <string>
 #include <memory>
+#include "freertos/FreeRTOS.h"
+#include "driver/i2s.h"
 #include "../storage/Storage.h"
-#include "IAudioFile.h"
+#include "PlaybackBase.h"
 
-class WavFile : public IAudioFile
+class WavPlayback : public PlaybackBase
 {
     public:
-    	WavFile(std::shared_ptr<Storage> storage);
-        virtual ~WavFile();
+    	WavPlayback(std::shared_ptr<Storage> storage, i2s_port_t i2sPort);
+        virtual ~WavPlayback();
         virtual AudioFileInfo Load(std::string filename);
         virtual void SeekToSeconds(float sec);
-        virtual size_t StreamSamples(void * buffer, size_t bufferSize);
         virtual bool Eof();
+    	void run(void* data);
+        void stop() override;
     private:
     	std::shared_ptr<Storage> storage;
         FILE* fp;
         size_t fileSize;
         size_t curFileOffset;
         size_t curChunkRemaining;
+        i2s_port_t i2sPort;
 };
 
 #endif

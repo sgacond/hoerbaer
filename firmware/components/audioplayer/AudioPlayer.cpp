@@ -9,9 +9,9 @@
 #include "driver/i2c.h"
 
 #include "../../Configuration.h"
-#include "IAudioFile.h"
-#include "WavFile.h"
-#include "Mp3File.h"
+#include "PlaybackBase.h"
+#include "WavPlayback.h"
+#include "Mp3Playback.h"
 #include "AudioPlayer.h"
 
 static const char* LOG_TAG = "AUDIO";
@@ -87,38 +87,36 @@ void AudioPlayer::InitCodec() {
 
 void AudioPlayer::PlayFile(std::string filename) {
     
-    std::unique_ptr<IAudioFile> audioFile;
-
     if (0 == filename.compare(filename.length() - 3, 3, "WAV")) {
         ESP_LOGI(LOG_TAG, "Reading %s", filename.c_str());
-        audioFile = std::make_unique<WavFile>(this->storage);
+        this->audioPlayback = std::make_unique<WavPlayback>(this->storage, I2S_NUM);
     } 
     else if (0 == filename.compare(filename.length() - 3, 3, "MP3")) {
         ESP_LOGI(LOG_TAG, "Reading %s", filename.c_str());
-        audioFile = std::make_unique<Mp3File>(this->storage);
+        this->audioPlayback = std::make_unique<Mp3Playback>(this->storage, I2S_NUM);
     }
     else
         throw std::runtime_error("Unable to read" + filename + ". Only WAV or MP3 files are supported.");
 
-    auto audioFileInfo = audioFile->Load(filename);
+    auto audioPbInfo = this->audioPlayback->Load(filename);
 
     ESP_LOGI(LOG_TAG, "Audio file loaded: %d / %dbit / %dch / %fs / %zd bytes buffer", 
-        audioFileInfo.pcmSamplerate, audioFileInfo.pcmBits, audioFileInfo.pcmChannels, 
-        audioFileInfo.durationSeconds, audioFileInfo.recommendedBufferSize);
+        audioPbInfo.pcmSamplerate, audioPbInfo.pcmBits, audioPbInfo.pcmChannels, 
+        audioPbInfo.durationSeconds, audioPbInfo.recommendedBufferSize);
 
-    this->setSamplerateBits(audioFileInfo.pcmSamplerate, audioFileInfo.pcmBits);
+    this->setSamplerateBits(audioPbInfo.pcmSamplerate, audioPbInfo.pcmBits);
 
-    size_t bufferSize = audioFileInfo.recommendedBufferSize, samplesRead = 0, i2s_bytes_written = 0;
-    auto buffer = (unsigned short *) malloc(bufferSize);
+    this->audioPlayback->start();
 
-    while(!audioFile->Eof()) {
-        samplesRead = audioFile->StreamSamples(buffer, bufferSize);
-        i2s_write(I2S_NUM, buffer, samplesRead, &i2s_bytes_written, 100);
-        // delay time: braucht's das? glaub nicht.
-        // vTaskDelay(8/portTICK_RATE_MS);
+}
+
+void AudioPlayer::Stop() {
+    if(!this->audioPlayback) {
+        ESP_LOGW(LOG_TAG, "Unable to stop - nothing playing.");
+        return;
     }
-
-    free(buffer);
+    this->audioPlayback->stop();
+    this->audioPlayback.release();
 }
 
 void AudioPlayer::SetVolume(uint8_t vol) {

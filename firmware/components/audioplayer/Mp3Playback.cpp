@@ -2,14 +2,15 @@
 #include <cstring>
 
 #include "mad.h"
-#include "Mp3File.h"
+#include "Mp3Playback.h"
 
-Mp3File::Mp3File(std::shared_ptr<Storage> storage) {
+Mp3Playback::Mp3Playback(std::shared_ptr<Storage> storage, i2s_port_t i2sPort) {
     this->storage = storage;
     this->fp = 0;
+    this->i2sPort = i2sPort;
 }
 
-Mp3File::~Mp3File() {
+Mp3Playback::~Mp3Playback() {
     if(this->fp)
         this->storage->Close(this->fp);
 }
@@ -21,7 +22,7 @@ Mp3File::~Mp3File() {
 //     return MAD_FLOW_CONTINUE;
 // }
 
-AudioFileInfo Mp3File::Load(std::string filename) {
+AudioFileInfo Mp3Playback::Load(std::string filename) {
 
     // OPEN File
     this->fp = this->storage->OpenRead(filename);
@@ -46,14 +47,16 @@ AudioFileInfo Mp3File::Load(std::string filename) {
     return (AudioFileInfo) { 44100, 16, 2, 0, 1440 };
 }
 
-void Mp3File::SeekToSeconds(float sec) {
+void Mp3Playback::stop() {
 }
 
-size_t Mp3File::StreamSamples(void * buffer, size_t bufferSize) {
+void Mp3Playback::SeekToSeconds(float sec) {
+}
+
+bool Mp3Playback::Eof() {
     return 0;
 }
 
-bool Mp3File::Eof() {
-    return 0;
-}
+void Mp3Playback::run(void* data) {
 
+}

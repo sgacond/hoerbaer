@@ -16,6 +16,7 @@
 #define PIN_SDCARD_CLK      GPIO_NUM_18
 #define PIN_SDCARD_CS       GPIO_NUM_5
 
+#define TSK_PRIO_WAVPLAY    configMAX_PRIORITIES - 2
 #define I2S_NUM             I2S_NUM_0
 #define PIN_I2S_BCK         GPIO_NUM_26
 #define PIN_I2S_LRCK        GPIO_NUM_25

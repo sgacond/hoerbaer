@@ -1,22 +1,24 @@
-#ifndef MP3FILE_H_
-#define MP3FILE_H_
+#ifndef Mp3Playback_H_
+#define Mp3Playback_H_
 
 #include <string>
 #include <memory>
-
 #include "mad.h"
+#include "freertos/FreeRTOS.h"
+#include "driver/i2s.h"
 #include "../storage/Storage.h"
-#include "IAudioFile.h"
+#include "PlaybackBase.h"
 
-class Mp3File : public IAudioFile
+class Mp3Playback : public PlaybackBase
 {
     public:
-    	Mp3File(std::shared_ptr<Storage> storage);
-        virtual ~Mp3File();
+    	Mp3Playback(std::shared_ptr<Storage> storage, i2s_port_t i2sPort);
+        virtual ~Mp3Playback();
         virtual AudioFileInfo Load(std::string filename);
         virtual void SeekToSeconds(float sec);
-        virtual size_t StreamSamples(void * buffer, size_t bufferSize);
         virtual bool Eof();
+    	void run(void* data);
+        void stop() override;
     private:
     	std::shared_ptr<Storage> storage;
         FILE* fp;
@@ -24,6 +26,7 @@ class Mp3File : public IAudioFile
         struct mad_stream madStream;
         struct mad_frame madFrame;
         struct mad_synth madSynth;
+        i2s_port_t i2sPort;
 };
 
 #endif

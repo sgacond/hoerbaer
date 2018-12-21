@@ -1,7 +1,8 @@
 #include <iostream>
 #include <cstring>
 
-#include "WavFile.h"
+#include "../../Configuration.h"
+#include "WavPlayback.h"
 
 #define WAV_DEFAULT_BUFFER_SIZE 1440
 
@@ -32,20 +33,25 @@ struct data_chunk_header {
 	unsigned int data_size;				// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
 };
 
-WavFile::WavFile(std::shared_ptr<Storage> storage) {
+WavPlayback::WavPlayback(std::shared_ptr<Storage> storage, i2s_port_t i2sPort) {
     this->storage = storage;
     this->fp = 0;
     this->fileSize = 0;
     this->curFileOffset = 0;
     this->curChunkRemaining = 0;
+    this->i2sPort = i2sPort;
+
+    this->setStackSize(2048); // NOT YET CALIBRATED TO LIMIT - can be decreased i think
+    this->setPriority(TSK_PRIO_WAVPLAY);
+    this->setName("WAVPlay");
 }
 
-WavFile::~WavFile() {
+WavPlayback::~WavPlayback() {
     if(this->fp)
         this->storage->Close(this->fp);
 }
 
-AudioFileInfo WavFile::Load(std::string filename) {
+AudioFileInfo WavPlayback::Load(std::string filename) {
     
     // OPEN File
     this->fp = this->storage->OpenRead(filename);
@@ -98,48 +104,70 @@ AudioFileInfo WavFile::Load(std::string filename) {
 
 }
 
-void WavFile::SeekToSeconds(float sec) {
+void WavPlayback::SeekToSeconds(float sec) {
     if(!this->fp) throw std::runtime_error("Operation failed. Load file first.");
 
     throw "NOT IMPLEMENTED YET";
 }
 
-size_t WavFile::StreamSamples(void * buffer, size_t bufferSize) {
+void WavPlayback::run(void* data) {
+
     if(!this->fp) throw std::runtime_error("Operation failed. Load file first.");
+   
+    // auto buffer = (unsigned short *) heap_caps_malloc(WAV_DEFAULT_BUFFER_SIZE, MALLOC_CAP_DMA);
+    auto buffer = (unsigned short *) malloc(WAV_DEFAULT_BUFFER_SIZE);
+    size_t i2s_bytes_written = 0;
+    struct data_chunk_header ch;
 
-    while(this->curChunkRemaining <= 0 && !this->Eof()) {
+    while(!this->Eof()) {
 
-        struct data_chunk_header ch;
-        size_t nRead = sizeof(ch);
-        fread(&ch, nRead, 1, this->fp);
-        this->curFileOffset += nRead;
+        while(this->curChunkRemaining <= 0 && !this->Eof()) {
+            fread(&ch, sizeof(ch), 1, this->fp);
+            this->curFileOffset += sizeof(ch);
 
-        std::cout << "WAV CHUNK Data Marker: " << ch.data_chunk_header << std::endl;
-        std::cout << "WAV CHUNK Size of data chunk: " << ch.data_size << std::endl;
-        this->curChunkRemaining = ch.data_size;
+            std::cout << "WAV CHUNK Data Marker: " << ch.data_chunk_header << std::endl;
+            std::cout << "WAV CHUNK Size of data chunk: " << ch.data_size << std::endl;
+            this->curChunkRemaining = ch.data_size;
 
-        if(strncmp(ch.data_chunk_header, "data", 4) != 0) {
-            std::cout << "WAV CHUNK skipped." << std::endl;
-            fseek(this->fp, ch.data_size, SEEK_CUR);
-            this->curFileOffset += ch.data_size;
-            this->curChunkRemaining = 0;
+            if(strncmp(ch.data_chunk_header, "data", 4) != 0) {
+                std::cout << "WAV CHUNK skipped." << std::endl;
+                fseek(this->fp, ch.data_size, SEEK_CUR);
+                this->curFileOffset += ch.data_size;
+                this->curChunkRemaining = 0;
+            }
         }
+
+        int read = WAV_DEFAULT_BUFFER_SIZE;
+
+        if(read > this->curChunkRemaining)
+            read = this->curChunkRemaining;
+
+        fread(buffer, read, 1, this->fp);
+
+        this->curChunkRemaining -= read;
+        this->curFileOffset += read;
+
+        i2s_write(this->i2sPort, buffer, read, &i2s_bytes_written, 100);
+        this->delay(8/portTICK_RATE_MS);
     }
 
-    int read = bufferSize;
+    std::cout << "WAV STOPPED - CLEANUP." << std::endl;
+    std::memset(buffer, 0, WAV_DEFAULT_BUFFER_SIZE);
+    i2s_write(this->i2sPort, buffer, WAV_DEFAULT_BUFFER_SIZE, &i2s_bytes_written, 100);
 
-    if(read > this->curChunkRemaining)
-        read = this->curChunkRemaining;
-
-    fread(buffer, read, 1, this->fp);
-
-    this->curChunkRemaining -= read;
-    this->curFileOffset += read;
-
-    return read;
+    heap_caps_free(buffer);
+    Task::stop();
 }
 
-bool WavFile::Eof() {
+void WavPlayback::stop() {
+    if(this->fp && !this->Eof()) {
+        fseek(this->fp, this->fileSize, SEEK_SET);
+        this->curFileOffset = this->fileSize;
+        vTaskDelay(100/portTICK_RATE_MS); // give the playback task the chance to stop
+    }
+}
+
+bool WavPlayback::Eof() {
     if(!this->fp) throw std::runtime_error("Operation failed. Load file first.");
     return this->curFileOffset == this->fileSize;
 }

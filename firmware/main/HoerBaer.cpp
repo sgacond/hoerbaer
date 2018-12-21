@@ -46,16 +46,13 @@ void HoerBaer::run() {
         this->audioPlayer->SetVolume(this->curVol);
         ESP_LOGI(LOG_TAG, "Audio initialized. Volume: %d", this->curVol);
 
-        // THIS IS A HACK: einfach zum testen!
-        // TODO: AudioPlayer als Task - kann commands verarbeiten. Eventuell events checken?
-        TaskHandle_t tsk = NULL;
-        xTaskCreate(this->playFile, "player", 4096, this, configMAX_PRIORITIES - 2, &tsk);
-
         while(1) {
             auto cmd = hbi->getCommandFromQueue();
             switch(cmd) {
                 case CMD_VOL_UP: this->increaseVolume(); break;
                 case CMD_VOL_DN: this->decreaseVolume(); break;
+                case CMD_PLAY: this->audioPlayer->PlayFile("1.WAV"); break;
+                case CMD_STOP: this->audioPlayer->Stop(); break;
             }
         }
     }
@@ -95,9 +92,4 @@ void HoerBaer::decreaseVolume() {
     this->curVol--;
     ESP_LOGI(LOG_TAG, "decrease volume to %d", this->curVol);
     this->audioPlayer->SetVolume(this->curVol);
-}
-
-void HoerBaer::playFile(void* p) {
-    auto baer = (HoerBaer*)p;
-    baer->audioPlayer->PlayFile("1.WAV");
 }
