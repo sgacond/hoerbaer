@@ -17,7 +17,7 @@ class PlaybackBase : public Task
     public:
         virtual ~PlaybackBase() {}
         virtual AudioFileInfo Load(std::string filename) = 0;
-        virtual void SeekToSeconds(float sec) = 0;
+        virtual void SeekToSamples(uint32_t samples) = 0;
         // virtual size_t StreamSamples(void * buffer, size_t bufferSize) = 0;
         virtual bool Eof() = 0;
         virtual void stop() = 0;

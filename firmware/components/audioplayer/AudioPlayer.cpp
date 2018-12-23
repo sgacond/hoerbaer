@@ -21,6 +21,7 @@ AudioPlayer::AudioPlayer(std::shared_ptr<Storage> storage) {
     this->storage = storage;
     this->sample_rate = 44100;
     this->bits = 16;
+    this->samplesPlayed = 0;
 }
 
 AudioPlayer::~AudioPlayer() {
@@ -83,17 +84,24 @@ void AudioPlayer::InitCodec() {
 
     ret = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
     if (ret != ESP_OK) throw std::runtime_error("Failed to initialize the i2c driver.");
+
+    vTaskDelay(100/portTICK_RATE_MS);
 }
 
-void AudioPlayer::PlayFile(std::string filename) {
+void AudioPlayer::PlayFile(std::string filename, uint32_t samplesStart) {
     
+    if(this->audioPlayback) {
+        ESP_LOGW(LOG_TAG, "Stopping current playing file.");
+        this->Stop();
+    }
+
     if (0 == filename.compare(filename.length() - 3, 3, "WAV")) {
         ESP_LOGI(LOG_TAG, "Reading %s", filename.c_str());
-        this->audioPlayback = std::make_unique<WavPlayback>(this->storage, I2S_NUM);
+        this->audioPlayback = std::make_unique<WavPlayback>(this->storage, I2S_NUM, &this->samplesPlayed);
     } 
     else if (0 == filename.compare(filename.length() - 3, 3, "MP3")) {
         ESP_LOGI(LOG_TAG, "Reading %s", filename.c_str());
-        this->audioPlayback = std::make_unique<Mp3Playback>(this->storage, I2S_NUM);
+        this->audioPlayback = std::make_unique<Mp3Playback>(this->storage, I2S_NUM, &this->samplesPlayed);
     }
     else
         throw std::runtime_error("Unable to read" + filename + ". Only WAV or MP3 files are supported.");
@@ -105,9 +113,12 @@ void AudioPlayer::PlayFile(std::string filename) {
         audioPbInfo.durationSeconds, audioPbInfo.recommendedBufferSize);
 
     this->setSamplerateBits(audioPbInfo.pcmSamplerate, audioPbInfo.pcmBits);
+    this->samplesPlayed = 0;
+
+    if(samplesStart > 0)
+        this->audioPlayback->SeekToSamples(samplesStart);
 
     this->audioPlayback->start();
-
 }
 
 void AudioPlayer::Stop() {
@@ -116,7 +127,7 @@ void AudioPlayer::Stop() {
         return;
     }
     this->audioPlayback->stop();
-    this->audioPlayback.release();
+    this->audioPlayback.reset();
 }
 
 void AudioPlayer::SetVolume(uint8_t vol) {
@@ -149,5 +160,6 @@ void AudioPlayer::setSamplerateBits(int sample_rate, int bits) {
 
     esp_err_t ret = i2s_set_clk(I2S_NUM, sample_rate, (i2s_bits_per_sample_t)bits, (i2s_channel_t)2);
     if (ret != ESP_OK) throw std::runtime_error("Failed to adjust samplerate / bits.");
+    ESP_LOGI(LOG_TAG, "Set samplerate to %d / %dbits", sample_rate, bits);
 
 }

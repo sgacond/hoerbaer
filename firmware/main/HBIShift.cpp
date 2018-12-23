@@ -23,6 +23,8 @@ HBIShift::HBIShift(QueueHandle_t shiftToHBIQUeue) {
 }
 
 HBIShift::~HBIShift() {
+    this->stop();
+    ESP_LOGI(LOG_TAG, "Shift Task stopped.");
 }
 
 void HBIShift::run(void *pvParameters) {

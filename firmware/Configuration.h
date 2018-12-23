@@ -8,7 +8,16 @@
 #include "driver/i2s.h"
 #include "driver/spi_master.h"
 
+#define MAIN_NTHLOOP_BATCHK 25 //256 // every nth loop - battery check
+
 #define PIN_PERIPH_MAIN     GPIO_NUM_2
+
+#define ADC_VBAT            ADC1_CHANNEL_6 // PIN 34
+#define ADC_VBAT_UNIT       ADC_UNIT_1
+#define ADC_VBAT_ATTEN      ADC_ATTEN_DB_11
+#define ADC_VBAT_WIDTH      ADC_WIDTH_BIT_12
+#define ADC_VBAT_MULTISMPL  64
+#define ADC_VBAT_VDIV       2 // applied volatage divider
 
 #define SPI_HOST_SDCARD     VSPI_HOST
 #define PIN_SDCARD_MISO     GPIO_NUM_19
@@ -33,6 +42,7 @@
 #define QUEUE_LEN_HBISHIFT  10
 #define QUEUE_LEN_HBICMD    10
 #define CMD_QUEUE_BLOCK_MS  200
+#define HBI_NOSE_SHUT_TICKS 120
 #define SPI_HOST_HBI        HSPI_HOST
 #define PIN_HBI_MISO        GPIO_NUM_12
 #define PIN_HBI_MOSI        GPIO_NUM_13
@@ -42,6 +52,6 @@
 #define PIN_HBI_PWM         GPIO_NUM_4
 #define PIN_HBI_EYEL        GPIO_NUM_32
 #define PIN_HBI_EYER        GPIO_NUM_33
-
+#define PIN_HBI_NOSE_CLK    GPIO_NUM_35
 
 #endif

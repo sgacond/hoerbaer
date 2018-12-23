@@ -1,10 +1,12 @@
 #include <iostream>
 #include <cstring>
+#include "esp_log.h"
 
 #include "../../Configuration.h"
 #include "WavPlayback.h"
 
 #define WAV_DEFAULT_BUFFER_SIZE 1440
+static const char* LOG_TAG = "WAV";
 
 struct wave_header {
 	char riff[4];						// RIFF string
@@ -33,13 +35,17 @@ struct data_chunk_header {
 	unsigned int data_size;				// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
 };
 
-WavPlayback::WavPlayback(std::shared_ptr<Storage> storage, i2s_port_t i2sPort) {
+WavPlayback::WavPlayback(std::shared_ptr<Storage> storage, i2s_port_t i2sPort, uint32_t * samplesPlayed) {
     this->storage = storage;
     this->fp = 0;
     this->fileSize = 0;
     this->curFileOffset = 0;
     this->curChunkRemaining = 0;
     this->i2sPort = i2sPort;
+    this->samplesPlayed = samplesPlayed;
+    this->samplesToStart = 0;
+    this->sampleBytesPerSecond = 0;
+    this->oneSampleBytes = 0;
 
     this->setStackSize(2048); // NOT YET CALIBRATED TO LIMIT - can be decreased i think
     this->setPriority(TSK_PRIO_WAVPLAY);
@@ -49,6 +55,7 @@ WavPlayback::WavPlayback(std::shared_ptr<Storage> storage, i2s_port_t i2sPort) {
 WavPlayback::~WavPlayback() {
     if(this->fp)
         this->storage->Close(this->fp);
+    ESP_LOGD(LOG_TAG, "Playback closed. File closed.");
 }
 
 AudioFileInfo WavPlayback::Load(std::string filename) {
@@ -62,7 +69,7 @@ AudioFileInfo WavPlayback::Load(std::string filename) {
     fread(&riffHeader, nRead, 1, this->fp);
     this->curFileOffset += nRead;
 
-    std::cout << "WAV: Overall size: " << (riffHeader.overall_size/1024) << "KB" << std::endl;
+    ESP_LOGI(LOG_TAG, "Overall size: %dKB", riffHeader.overall_size/1024);
     this->fileSize = riffHeader.overall_size;
 
     // Skip until fmt-Header
@@ -72,7 +79,7 @@ AudioFileInfo WavPlayback::Load(std::string filename) {
     this->curFileOffset += nRead;
 
     while(strncmp(nextChunkHeader.type, "fmt", 3) != 0) {
-        std::cout << "WAV: skip header chunk: " << nextChunkHeader.type << " length: " << nextChunkHeader.size << std::endl;
+        ESP_LOGI(LOG_TAG, "skip header chunk: %s length: %d", nextChunkHeader.type, nextChunkHeader.size);
         fseek(this->fp, nextChunkHeader.size, SEEK_CUR);
         this->curFileOffset += nextChunkHeader.size;
         fread(&nextChunkHeader, nRead, 1, this->fp);
@@ -88,26 +95,24 @@ AudioFileInfo WavPlayback::Load(std::string filename) {
     fread(&formatHeader, nRead, 1, this->fp);
     this->curFileOffset += nRead;
 
-    std::cout << "WAV: Format marker: " << formatHeader.fmt_chunk_marker << std::endl;
-    std::cout << "WAV: Format type: " << formatHeader.format_type << std::endl;
-    std::cout << "WAV: Channels: " << formatHeader.channels << std::endl;
-    std::cout << "WAV: Sample rate: " << formatHeader.sample_rate << std::endl;
-    std::cout << "WAV: Bits per sample: " << formatHeader.bits_per_sample << std::endl;
+    ESP_LOGI(LOG_TAG, "Format marker: %s", formatHeader.fmt_chunk_marker);
+    ESP_LOGI(LOG_TAG, "Format type: %d", formatHeader.format_type);
+    ESP_LOGI(LOG_TAG, "Channels: %d", formatHeader.channels);
+    ESP_LOGI(LOG_TAG, "Sample rate: %u", formatHeader.sample_rate);
+    ESP_LOGI(LOG_TAG, "Bits per sample: %d", formatHeader.bits_per_sample);
 
-    long size_of_each_sample = (formatHeader.channels * formatHeader.bits_per_sample) / 8;
-    std::cout << "WAV: Size of each sample: " << size_of_each_sample << " bytes." << std::endl;
+    this->oneSampleBytes = (formatHeader.channels * formatHeader.bits_per_sample) / 8;
+    ESP_LOGI(LOG_TAG, "Size of each sample: %d bytes.", this->oneSampleBytes);
+    this->sampleBytesPerSecond = this->oneSampleBytes * formatHeader.sample_rate;
 
     float durationSeconds = (float) riffHeader.overall_size / formatHeader.byterate;
-    std::cout << "WAV: Approx.Duration in seconds: " << durationSeconds << std::endl;
+    ESP_LOGI(LOG_TAG, "Approx.Duration in seconds: %f", durationSeconds);
 
     return (AudioFileInfo) { formatHeader.sample_rate, formatHeader.bits_per_sample, formatHeader.channels, durationSeconds, WAV_DEFAULT_BUFFER_SIZE };
-
 }
 
-void WavPlayback::SeekToSeconds(float sec) {
-    if(!this->fp) throw std::runtime_error("Operation failed. Load file first.");
-
-    throw "NOT IMPLEMENTED YET";
+void WavPlayback::SeekToSamples(uint32_t samples) {
+    this->samplesToStart = samples;
 }
 
 void WavPlayback::run(void* data) {
@@ -116,8 +121,13 @@ void WavPlayback::run(void* data) {
    
     // auto buffer = (unsigned short *) heap_caps_malloc(WAV_DEFAULT_BUFFER_SIZE, MALLOC_CAP_DMA);
     auto buffer = (unsigned short *) malloc(WAV_DEFAULT_BUFFER_SIZE);
-    size_t i2s_bytes_written = 0;
+    size_t i2sBytesWritten = 0;
     struct data_chunk_header ch;
+    
+    auto sampleBytesToSkip = this->samplesToStart * this->oneSampleBytes;
+
+    ESP_LOGI(LOG_TAG, "Play from samples %u (sampleBytesPerSecond: %u) -> %u bytes to skip.", 
+        this->samplesToStart, this->sampleBytesPerSecond, sampleBytesToSkip);
 
     while(!this->Eof()) {
 
@@ -125,16 +135,35 @@ void WavPlayback::run(void* data) {
             fread(&ch, sizeof(ch), 1, this->fp);
             this->curFileOffset += sizeof(ch);
 
-            std::cout << "WAV CHUNK Data Marker: " << ch.data_chunk_header << std::endl;
-            std::cout << "WAV CHUNK Size of data chunk: " << ch.data_size << std::endl;
+            ESP_LOGI(LOG_TAG, "CHUNK Data Marker: %s", ch.data_chunk_header);
+            ESP_LOGI(LOG_TAG, "CHUNK Size of data chunk: %u", ch.data_size);
             this->curChunkRemaining = ch.data_size;
 
             if(strncmp(ch.data_chunk_header, "data", 4) != 0) {
-                std::cout << "WAV CHUNK skipped." << std::endl;
+                ESP_LOGI(LOG_TAG, "WAV CHUNK skipped.");
                 fseek(this->fp, ch.data_size, SEEK_CUR);
                 this->curFileOffset += ch.data_size;
                 this->curChunkRemaining = 0;
             }
+        }
+
+        // seek
+        if(sampleBytesToSkip > this->curChunkRemaining) { // whole chunk
+            fseek(this->fp, this->curChunkRemaining, SEEK_CUR);
+            this->curFileOffset += this->curChunkRemaining;
+            sampleBytesToSkip -= this->curChunkRemaining;
+            *(this->samplesPlayed) += this->curChunkRemaining / this->oneSampleBytes;
+            this->curChunkRemaining = 0;
+            ESP_LOGI(LOG_TAG, "SEEK, skipped whole chunk: bytes remaining to seek: %d.\n", sampleBytesToSkip);
+            continue;
+        }
+        else if(sampleBytesToSkip > 0) { // part of the chunck
+            fseek(this->fp, sampleBytesToSkip, SEEK_CUR);
+            this->curFileOffset += sampleBytesToSkip;
+            this->curChunkRemaining -= sampleBytesToSkip;
+            *(this->samplesPlayed) += sampleBytesToSkip / this->oneSampleBytes;
+            ESP_LOGI(LOG_TAG, "SEEK, less then one chunk, skipped %d bytes.\n", sampleBytesToSkip);
+            sampleBytesToSkip = 0;
         }
 
         int read = WAV_DEFAULT_BUFFER_SIZE;
@@ -142,18 +171,20 @@ void WavPlayback::run(void* data) {
         if(read > this->curChunkRemaining)
             read = this->curChunkRemaining;
 
-        fread(buffer, read, 1, this->fp);
-
+        *(this->samplesPlayed) += read / this->oneSampleBytes;
         this->curChunkRemaining -= read;
         this->curFileOffset += read;
 
-        i2s_write(this->i2sPort, buffer, read, &i2s_bytes_written, 100);
-        this->delay(8/portTICK_RATE_MS);
+        // read buffer and stream audio
+        fread(buffer, read, 1, this->fp);
+        i2s_write(this->i2sPort, buffer, read, &i2sBytesWritten, 100);
+        this->delay(i2sBytesWritten * 1000UL / this->sampleBytesPerSecond / portTICK_RATE_MS);
+
     }
 
-    std::cout << "WAV STOPPED - CLEANUP." << std::endl;
+    ESP_LOGI(LOG_TAG, "STOPPED, cleaning up.");
     std::memset(buffer, 0, WAV_DEFAULT_BUFFER_SIZE);
-    i2s_write(this->i2sPort, buffer, WAV_DEFAULT_BUFFER_SIZE, &i2s_bytes_written, 100);
+    i2s_write(this->i2sPort, buffer, WAV_DEFAULT_BUFFER_SIZE, &i2sBytesWritten, 100);
 
     heap_caps_free(buffer);
     Task::stop();
@@ -169,5 +200,5 @@ void WavPlayback::stop() {
 
 bool WavPlayback::Eof() {
     if(!this->fp) throw std::runtime_error("Operation failed. Load file first.");
-    return this->curFileOffset == this->fileSize;
+    return this->curFileOffset >= this->fileSize;
 }

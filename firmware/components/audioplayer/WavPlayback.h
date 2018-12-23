@@ -11,10 +11,10 @@
 class WavPlayback : public PlaybackBase
 {
     public:
-    	WavPlayback(std::shared_ptr<Storage> storage, i2s_port_t i2sPort);
+    	WavPlayback(std::shared_ptr<Storage> storage, i2s_port_t i2sPort, uint32_t * bytesPlayed);
         virtual ~WavPlayback();
         virtual AudioFileInfo Load(std::string filename);
-        virtual void SeekToSeconds(float sec);
+        void SeekToSamples(uint32_t millis);
         virtual bool Eof();
     	void run(void* data);
         void stop() override;
@@ -25,6 +25,10 @@ class WavPlayback : public PlaybackBase
         size_t curFileOffset;
         size_t curChunkRemaining;
         i2s_port_t i2sPort;
+        uint32_t* samplesPlayed;
+        uint32_t sampleBytesPerSecond;
+        uint32_t samplesToStart;
+        uint32_t oneSampleBytes;
 };
 
 #endif

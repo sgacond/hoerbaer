@@ -14,7 +14,7 @@
 #define CMD_VOL_UP  0x11
 #define CMD_VOL_DN  0x12
 #define CMD_PLAY    0x01
-#define CMD_STOP    0x02
+#define CMD_PAUSE   0x02
 #define CMD_REV     0x03
 #define CMD_FWD     0x04
 #define CMD_PAW_1   0xA0
@@ -33,6 +33,7 @@
 #define CMD_PAW_14  0xAD
 #define CMD_PAW_15  0xAE
 #define CMD_PAW_16  0xAF
+#define CMD_SHUTDN  0xEF
 
 class HBI : public Task {
 public:
@@ -41,6 +42,7 @@ public:
 	void run(void* data);
     void setEyes(uint8_t leftPercentage, uint8_t rightPercentage);
     uint8_t getCommandFromQueue();
+    bool nosePressed();
 private:
     std::unique_ptr<HBIShift> shiftTask;
     std::unique_ptr<PWM> leftEyePWM;

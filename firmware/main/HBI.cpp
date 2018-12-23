@@ -23,9 +23,14 @@ HBI::HBI() {
     this->shiftTask = make_unique<HBIShift>(this->shiftToHBIQUeue);
     this->leftEyePWM = make_unique<PWM>(PIN_HBI_EYEL, 100, LEDC_TIMER_10_BIT, LEDC_TIMER_0, LEDC_CHANNEL_1);
     this->rightEyePWM = make_unique<PWM>(PIN_HBI_EYER, 100, LEDC_TIMER_10_BIT, LEDC_TIMER_0, LEDC_CHANNEL_2);
+
+    GPIO::setInput(PIN_HBI_NOSE_CLK);
 }
 
 HBI::~HBI() {
+    this->stop();
+    this->shiftTask.reset();
+    ESP_LOGI(LOG_TAG, "HBI stopped.");
 }
 
 void HBI::run(void *pvParameters) {
@@ -34,9 +39,12 @@ void HBI::run(void *pvParameters) {
     this->shiftTask->start();
     uint32_t valReceived;
     uint8_t cmdOut;
+    bool nosePressed = false;
+    TickType_t noseDownOn = 0, timePressed = 0;
     while(1) {
         cmdOut = 0x00;
-        if (xQueueReceive(this->shiftToHBIQUeue, &valReceived, portMAX_DELAY) == pdPASS) {
+        // check if something new from shift registers arrived.
+        if (xQueueReceive(this->shiftToHBIQUeue, &valReceived, 100 / portTICK_PERIOD_MS) == pdPASS) {
             if((valReceived & 0xff000000) == 0xff000000) { // Encoder
                 if(valReceived == 0xff404000 || valReceived == 0xff4080c0)
                     cmdOut = CMD_VOL_DN;
@@ -48,7 +56,7 @@ void HBI::run(void *pvParameters) {
             else { // PAW
                 switch(valReceived) {
                     case 0x01000000: cmdOut = CMD_PLAY; break;
-                    case 0x00000001: cmdOut = CMD_STOP; break;
+                    case 0x00000001: cmdOut = CMD_PAUSE; break;
                     case 0x00010000: cmdOut = CMD_REV; break;
                     case 0x00000100: cmdOut = CMD_FWD; break;
                     case 0x02000000: cmdOut = CMD_PAW_1; break;
@@ -69,11 +77,33 @@ void HBI::run(void *pvParameters) {
                     case 0x00001000: cmdOut = CMD_PAW_16; break;
                 }
             }
-            if(cmdOut > 0) {
-                ESP_LOGI(LOG_TAG, "CMD: 0x%02x", cmdOut);
-                if(xQueueSend(this->commandQueue, &cmdOut, 5 / portTICK_PERIOD_MS) != pdPASS)
-                    ESP_LOGW(LOG_TAG, "Event queue full!");
+        }
+
+        // check if nose click changed
+        nosePressed = this->nosePressed();
+
+        if(nosePressed && noseDownOn == 0)
+            noseDownOn = xTaskGetTickCount();
+
+        if(noseDownOn > 0) {
+            timePressed = xTaskGetTickCount() - noseDownOn;
+            if(timePressed > HBI_NOSE_SHUT_TICKS) {
+                cmdOut = CMD_SHUTDN;
+                noseDownOn = 0;
+                timePressed = 0;
             }
+            else if(!nosePressed) {
+                ESP_LOGI(LOG_TAG, "Nose up under threshold %d / %d", timePressed, HBI_NOSE_SHUT_TICKS);
+                noseDownOn = 0;
+                timePressed = 0;
+            }
+        }
+
+        // if command ready - transmit
+        if(cmdOut > 0x00) {
+            ESP_LOGI(LOG_TAG, "CMD: 0x%02x", cmdOut);
+            if(xQueueSend(this->commandQueue, &cmdOut, 5 / portTICK_PERIOD_MS) != pdPASS)
+                ESP_LOGW(LOG_TAG, "Event queue full!");
         }
     }
 }
@@ -81,6 +111,10 @@ void HBI::run(void *pvParameters) {
 void HBI::setEyes(uint8_t leftPercentage, uint8_t rightPercentage) {
     this->leftEyePWM->setDutyPercentage(leftPercentage);
     this->rightEyePWM->setDutyPercentage(rightPercentage);
+}
+
+bool HBI::nosePressed() {
+    return GPIO::read(PIN_HBI_NOSE_CLK);
 }
 
 uint8_t HBI::getCommandFromQueue() {

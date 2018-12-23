@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "esp_log.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdspi_host.h"
 #include "esp_vfs_fat.h"
@@ -9,18 +10,20 @@
 #include "../../Configuration.h"
 #include "Storage.h"
 
+static const char* LOG_TAG = "STORAGE";
+
 Storage::Storage() {
-    std::cout << "Storage constructed." << std::endl;
+    ESP_LOGI(LOG_TAG, "Storage constructed.");
 }
 
 Storage::~Storage() {
     esp_vfs_fat_sdmmc_unmount();
-    std::cout << "Storage destructed." << std::endl;
+    ESP_LOGI(LOG_TAG, "Storage destructed.");
 }
 
 void Storage::Init() {
     
-    std::cout << "Initializing SD card." << std::endl;
+    ESP_LOGI(LOG_TAG, "Initializing SD card.");
 
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     host.slot = SPI_HOST_SDCARD;
@@ -52,7 +55,7 @@ void Storage::Init() {
 }
 
 FILE* Storage::OpenRead(std::string path) {
-    std::cout << "Reading file" << std::endl;
+    ESP_LOGI(LOG_TAG, "Reading file %s", path.c_str());
 
     std::string fullPath("/sdcard/");
     fullPath.append(path);

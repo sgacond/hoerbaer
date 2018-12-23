@@ -21,6 +21,8 @@
         "__string": "cpp",
         "deque": "cpp",
         "ios": "cpp",
-        "istream": "cpp"
+        "istream": "cpp",
+        "bitset": "cpp",
+        "__locale": "cpp"
     }
 }
