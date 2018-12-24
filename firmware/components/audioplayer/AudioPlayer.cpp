@@ -33,6 +33,22 @@ void AudioPlayer::InitCodec() {
 
     esp_err_t ret;
 
+    // I2C VOLUME CONTROL CHANNEL
+    ESP_LOGI(LOG_TAG, "Inititialize I2C");
+    i2c_config_t conf = {};
+    conf.mode = I2C_MODE_MASTER;
+    conf.sda_io_num = PIN_I2C_SDA;
+    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.scl_io_num = PIN_I2C_SCL;
+    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.master.clk_speed = 100000;
+
+    ret = i2c_param_config(I2C_NUM_0, &conf);
+    if (ret != ESP_OK) throw std::runtime_error("Failed to initialize the i2c param configuration.");
+
+    ret = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
+    if (ret != ESP_OK) throw std::runtime_error("Failed to initialize the i2c driver.");
+
     //for 36Khz sample rates, we create 100Hz sine wave, every cycle need 36000/100 = 360 samples (4-bytes or 8-bytes each sample)
     //depend on bits_per_sample
     //using 6 buffers, we need 60-samples per buffer
@@ -68,22 +84,6 @@ void AudioPlayer::InitCodec() {
     ESP_LOGI(LOG_TAG, "Inititialize MCK output");
     REG_WRITE(PIN_CTRL, 0b111111110000);
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-
-    // I2C VOLUME CONTROL CHANNEL
-    ESP_LOGI(LOG_TAG, "Inititialize I2C");
-    i2c_config_t conf = {};
-    conf.mode = I2C_MODE_MASTER;
-    conf.sda_io_num = PIN_I2C_SDA;
-    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.scl_io_num = PIN_I2C_SCL;
-    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.master.clk_speed = 100000;
-
-    ret = i2c_param_config(I2C_NUM_0, &conf);
-    if (ret != ESP_OK) throw std::runtime_error("Failed to initialize the i2c param configuration.");
-
-    ret = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
-    if (ret != ESP_OK) throw std::runtime_error("Failed to initialize the i2c driver.");
 
     vTaskDelay(100/portTICK_RATE_MS);
 }

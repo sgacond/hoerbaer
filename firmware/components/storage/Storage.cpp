@@ -1,9 +1,12 @@
 #include <iostream>
 #include <stdexcept>
+#include <vector>
+#include <algorithm>
 
 #include "esp_log.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdspi_host.h"
+#include "esp_vfs.h"
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
 
@@ -65,6 +68,44 @@ FILE* Storage::OpenRead(std::string path) {
         throw std::runtime_error("Failed to open file for reading.");
 
     return f;
+}
+
+std::vector<std::string> Storage::ListDirectoryFiles(std::string path) {
+
+    std::string fullPath("/sdcard/");
+    fullPath.append(path);
+
+    DIR* dp = opendir(fullPath.c_str());
+    struct dirent* ep = nullptr;
+    std::vector<std::string> filenames;
+
+    if (dp != NULL)
+    {
+        while (true) {
+            ep = readdir(dp);
+            
+            if(!ep) 
+                break;
+            
+            if(ep->d_type != DT_REG) 
+                continue;
+            
+            auto name = std::string(ep->d_name);
+            if(name.rfind("_", 0) == 0) // starts with _  -> hidden finder file. We use it for "disabled".
+                continue;
+
+            ESP_LOGD(LOG_TAG, "Loaded file: %s", name.c_str());
+            filenames.push_back(name);
+        }
+
+        closedir (dp);
+    }
+    else
+        ESP_LOGW(LOG_TAG, "Directory doesnt exist or not readable: %s", fullPath.c_str());
+
+    std::sort(filenames.begin(), filenames.end());
+
+    return filenames;
 }
 
 void Storage::Close(FILE* fp) {

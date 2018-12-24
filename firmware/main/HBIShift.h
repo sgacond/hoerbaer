@@ -15,11 +15,11 @@
 
 class HBIShift : public Task {
 public:
-	HBIShift(QueueHandle_t shiftToHBIQUeue);
+	HBIShift(QueueHandle_t shiftToHBIQUeue, uint16_t* powLedState);
 	virtual ~HBIShift();
 	void run(void* data);
 private:
-    uint16_t powLedState;
+    uint16_t* powLedState;
     QueueHandle_t shiftToHBIQUeue;
 };
 

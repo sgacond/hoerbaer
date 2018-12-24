@@ -2,6 +2,7 @@
 #define HOERBAER_H_
 
 #include <memory>
+#include <vector>
 #include <stdio.h>
 #include <Task.h>
 #include <PWM.h>
@@ -24,12 +25,20 @@ private:
     std::unique_ptr<HBI> hbi;
     std::unique_ptr<AudioPlayer> audioPlayer;
     std::unique_ptr<BatteryGuard> batteryGuard;
+    std::vector<std::string> pawFiles[16];
     uint8_t curVol;
     bool shouldBeRunning;
+    uint8_t curPaw;
+    uint8_t curIdxOnPaw;
     void enablePeripherials();
     void disablePeripherials();
     void increaseVolume();
     void decreaseVolume();
+    void loadPawsFromStorage();
+    void playNextFromPaw(uint8_t idx);
+    void playNext();
+    void playPrev();
+    std::string getCurrentAudioFile();
     void checkUnderVoltageShutdown();
     void shutdown();
 };

@@ -17,10 +17,11 @@ HBI::HBI() {
     this->setStackSize(2048); // NOT YET CALIBRATED TO LIMIT - can be decreased i think
     this->setPriority(TSK_PRIO_HBI);
     this->setName("HBI");
+    this->powLedState = 0;
 
     this->commandQueue = xQueueCreate(QUEUE_LEN_HBICMD, sizeof(uint8_t));
     this->shiftToHBIQUeue = xQueueCreate(QUEUE_LEN_HBISHIFT, sizeof(uint32_t));
-    this->shiftTask = make_unique<HBIShift>(this->shiftToHBIQUeue);
+    this->shiftTask = make_unique<HBIShift>(this->shiftToHBIQUeue, &(this->powLedState));
     this->leftEyePWM = make_unique<PWM>(PIN_HBI_EYEL, 100, LEDC_TIMER_10_BIT, LEDC_TIMER_0, LEDC_CHANNEL_1);
     this->rightEyePWM = make_unique<PWM>(PIN_HBI_EYER, 100, LEDC_TIMER_10_BIT, LEDC_TIMER_0, LEDC_CHANNEL_2);
 
@@ -35,8 +36,9 @@ HBI::~HBI() {
 
 void HBI::run(void *pvParameters) {
     GPIO::setOutput(PIN_HBI_PWM);
-    GPIO::write(PIN_HBI_PWM, false); // PWM LOW -> LEDS ON.
+    GPIO::write(PIN_HBI_PWM, true); // PWM HIGH -> LEDS OFF.
     this->shiftTask->start();
+    GPIO::write(PIN_HBI_PWM, false); // PWM LOW -> LEDS ON.
     uint32_t valReceived;
     uint8_t cmdOut;
     bool nosePressed = false;
@@ -122,4 +124,17 @@ uint8_t HBI::getCommandFromQueue() {
     if (xQueueReceive(this->commandQueue, &cmdOut, CMD_QUEUE_BLOCK_MS / portTICK_PERIOD_MS) == pdPASS)
         return cmdOut;
     return CMD_NOOP;
+}
+
+void HBI::setPawPlaying(uint8_t paw) {    
+    // shift registers and paw indices are not exactly coharent ;).
+    if(paw >= 4 && paw < 8)
+        paw += 12;
+    if(paw >= 8)
+        paw -=4;
+    this->powLedState = (((uint16_t) 1) << paw);
+}
+
+void HBI::setNoPawPlaying() {
+    this->powLedState = 0;
 }

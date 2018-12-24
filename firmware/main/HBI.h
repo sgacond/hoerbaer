@@ -43,12 +43,15 @@ public:
     void setEyes(uint8_t leftPercentage, uint8_t rightPercentage);
     uint8_t getCommandFromQueue();
     bool nosePressed();
+    void setPawPlaying(uint8_t paw);
+    void setNoPawPlaying();
 private:
     std::unique_ptr<HBIShift> shiftTask;
     std::unique_ptr<PWM> leftEyePWM;
     std::unique_ptr<PWM> rightEyePWM;
     QueueHandle_t shiftToHBIQUeue;
     QueueHandle_t commandQueue;
+    uint16_t powLedState;
 };
 
 #endif

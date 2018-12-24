@@ -13,13 +13,13 @@ static const char* LOG_TAG = "HBI_SHIFT";
 using namespace std;
 using namespace ESP32CPP;
 
-HBIShift::HBIShift(QueueHandle_t shiftToHBIQUeue) {
+HBIShift::HBIShift(QueueHandle_t shiftToHBIQUeue, uint16_t* powLedState) {
     // init shift register stuff...
     this->setStackSize(2048); // NOT YET CALIBRATED TO LIMIT - can be decreased i think
     this->setPriority(TSK_PRIO_HBISHIFT);
     this->setName("HBI SHIFT");
     this->shiftToHBIQUeue = shiftToHBIQUeue;
-    this->powLedState = 0;
+    this->powLedState = powLedState;
 }
 
 HBIShift::~HBIShift() {
@@ -54,11 +54,12 @@ void HBIShift::run(void *pvParameters) {
         vTaskDelay(2 / portTICK_PERIOD_MS);
         GPIO::write(PIN_HBI_LIN, true);
 
+        auto powLed = *(this->powLedState);
 	    uint8_t data[bufLen];
         data[0] = 0;
         data[1] = 0;
-        data[2] = ((this->powLedState & 0x00FF) ^ 0x33);
-        data[3] = (((this->powLedState & 0xFF00) >> 8) ^ 0x33);
+        data[2] = ((powLed & 0x00FF) ^ 0x33);
+        data[3] = (((powLed & 0xFF00) >> 8) ^ 0x33);
         spi->transfer(data, bufLen);
 
         // rising pulse for out registers
