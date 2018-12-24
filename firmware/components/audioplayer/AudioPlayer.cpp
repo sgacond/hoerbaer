@@ -130,6 +130,12 @@ void AudioPlayer::Stop() {
     this->audioPlayback.reset();
 }
 
+bool AudioPlayer::Eof() {
+    if(!this->audioPlayback)
+        return false; // eof means "loaded, playing and finished";
+    return this->audioPlayback->Eof();
+}
+
 void AudioPlayer::SetVolume(uint8_t vol) {
     uint8_t addr = CODEC_I2C_ADDR;
 
@@ -147,7 +153,7 @@ void AudioPlayer::SetVolume(uint8_t vol) {
     if (ret != ESP_OK) 
         ESP_LOGW(LOG_TAG, "Failed to write i2c volume.");
     else
-        ESP_LOGI(LOG_TAG, "AUDIO: Writen Volume: %d/%d", vol, CODEC_MAX_VOL);
+        ESP_LOGI(LOG_TAG, "Writen Volume: %d/%d", vol, CODEC_MAX_VOL);
 }
 
 void AudioPlayer::setSamplerateBits(int sample_rate, int bits) {

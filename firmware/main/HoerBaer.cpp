@@ -46,6 +46,7 @@ void HoerBaer::run() {
 
         this->enablePeripherials();
         ESP_LOGI(LOG_TAG, "Peripherials enabled.");
+        FreeRTOS::sleep(200);
 
         this->audioPlayer->InitCodec();
         this->audioPlayer->SetVolume(this->curVol);
@@ -114,6 +115,10 @@ void HoerBaer::run() {
                 case CMD_SHUTDN: this->shutdown(); break;
             }
 
+            if(this->audioPlayer->Eof()) {
+                ESP_LOGI(LOG_TAG, "Audio EOF, play next song.");
+                this->playNext();
+            }
             // printf("MP: %u / %f s\n", this->audioPlayer->samplesPlayed, this->audioPlayer->samplesPlayed / (float)44100.0);
         }
         

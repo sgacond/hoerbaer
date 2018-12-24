@@ -14,6 +14,7 @@ public:
     void PlayFile(std::string filename, uint32_t samplesStart = 0);
     void SetVolume(uint8_t vol);
     void Stop();
+    bool Eof();
     uint32_t samplesPlayed;
 
 private:
