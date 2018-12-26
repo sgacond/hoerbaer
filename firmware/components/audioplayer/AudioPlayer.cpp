@@ -35,15 +35,15 @@ void AudioPlayer::InitCodec() {
 
     // I2C VOLUME CONTROL CHANNEL
     ESP_LOGI(LOG_TAG, "Inititialize I2C");
-    i2c_config_t conf = {};
-    conf.mode = I2C_MODE_MASTER;
-    conf.sda_io_num = PIN_I2C_SDA;
-    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.scl_io_num = PIN_I2C_SCL;
-    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.master.clk_speed = 100000;
+    i2c_config_t i2cConf = {};
+    i2cConf.mode = I2C_MODE_MASTER;
+    i2cConf.sda_io_num = PIN_I2C_SDA;
+    i2cConf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    i2cConf.scl_io_num = PIN_I2C_SCL;
+    i2cConf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+    i2cConf.master.clk_speed = AMP_I2C_CLOCK;
 
-    ret = i2c_param_config(I2C_NUM_0, &conf);
+    ret = i2c_param_config(I2C_NUM_0, &i2cConf);
     if (ret != ESP_OK) throw std::runtime_error("Failed to initialize the i2c param configuration.");
 
     ret = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
@@ -130,6 +130,12 @@ void AudioPlayer::Stop() {
     this->audioPlayback.reset();
 }
 
+bool AudioPlayer::Playing() {
+    if(this->audioPlayback)
+        return true;
+    return false;
+}
+
 bool AudioPlayer::Eof() {
     if(!this->audioPlayback)
         return false; // eof means "loaded, playing and finished";
@@ -137,23 +143,32 @@ bool AudioPlayer::Eof() {
 }
 
 void AudioPlayer::SetVolume(uint8_t vol) {
-    uint8_t addr = CODEC_I2C_ADDR;
 
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, addr << 1 | I2C_MASTER_WRITE, 0x1);
-    i2c_master_write_byte(cmd, vol, 0x1);
-    i2c_master_stop(cmd);
+    uint8_t addr = AMP_I2C_ADDR;
+    uint8_t nTry = 0;
+    esp_err_t ret = ESP_OK;
 
-    esp_err_t ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 300 / portTICK_RATE_MS);
+    do {
+        nTry++;
 
-    i2c_cmd_link_delete(cmd);
-    vTaskDelay(100/portTICK_RATE_MS);
+        i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+        i2c_master_start(cmd);
+        i2c_master_write_byte(cmd, addr << 1 | I2C_MASTER_WRITE, 0x1);
+        i2c_master_write_byte(cmd, vol, 0x1);
+        i2c_master_stop(cmd);
+
+        ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 10 / portTICK_RATE_MS);
+        i2c_cmd_link_delete(cmd);
+
+        if (ret != ESP_OK) // little delay between tries
+            vTaskDelay(5 / portTICK_RATE_MS);
+    }
+    while (ret != ESP_OK && nTry < AMP_I2C_RETRIES);
 
     if (ret != ESP_OK) 
-        ESP_LOGW(LOG_TAG, "Failed to write i2c volume.");
+        ESP_LOGW(LOG_TAG, "Failed to write i2c volume after %u tries.", nTry);
     else
-        ESP_LOGI(LOG_TAG, "Writen Volume: %d/%d", vol, CODEC_MAX_VOL);
+        ESP_LOGI(LOG_TAG, "Writen Volume: %d/%d after %u tries.", vol, AMP_MAX_VOL, nTry);
 }
 
 void AudioPlayer::setSamplerateBits(int sample_rate, int bits) {

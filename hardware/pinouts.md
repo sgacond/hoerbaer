@@ -19,6 +19,7 @@
 | IO27 | DAC-SDIN      | DAC     | Orange  |
 | IO21 | AMP-SDA       | AMP     | Yellow  |
 | IO22 | AMP-SCK       | AMP     | Orange  |
+| IO15 | AMP-MUTE      | AMP     |         |
 | IO34 | VBAT/2        | BAT     | Yellow  |
 | IO19 | D0 / MISO     | SD      | Brown   |
 |  IO5 | D3 / CS       | SD      | Green   |

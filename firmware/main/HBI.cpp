@@ -26,6 +26,8 @@ HBI::HBI() {
     this->rightEyePWM = make_unique<PWM>(PIN_HBI_EYER, 100, LEDC_TIMER_10_BIT, LEDC_TIMER_0, LEDC_CHANNEL_2);
 
     GPIO::setInput(PIN_HBI_NOSE_CLK);
+    GPIO::setOutput(PIN_HBI_PWM);
+    GPIO::write(PIN_HBI_PWM, true); // PWM HIGH -> LEDS OFF.
 }
 
 HBI::~HBI() {
@@ -35,10 +37,11 @@ HBI::~HBI() {
 }
 
 void HBI::run(void *pvParameters) {
-    GPIO::setOutput(PIN_HBI_PWM);
-    GPIO::write(PIN_HBI_PWM, true); // PWM HIGH -> LEDS OFF.
+
     this->shiftTask->start();
+    this->delay(100);
     GPIO::write(PIN_HBI_PWM, false); // PWM LOW -> LEDS ON.
+
     uint32_t valReceived;
     uint8_t cmdOut;
     bool nosePressed = false;
@@ -103,7 +106,7 @@ void HBI::run(void *pvParameters) {
 
         // if command ready - transmit
         if(cmdOut > 0x00) {
-            ESP_LOGI(LOG_TAG, "CMD: 0x%02x", cmdOut);
+            ESP_LOGD(LOG_TAG, "CMD: 0x%02x", cmdOut);
             if(xQueueSend(this->commandQueue, &cmdOut, 5 / portTICK_PERIOD_MS) != pdPASS)
                 ESP_LOGW(LOG_TAG, "Event queue full!");
         }

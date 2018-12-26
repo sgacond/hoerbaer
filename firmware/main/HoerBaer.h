@@ -32,6 +32,8 @@ private:
     uint8_t curIdxOnPaw;
     void enablePeripherials();
     void disablePeripherials();
+    void muteAmp();
+    void unmuteAmp();
     void increaseVolume();
     void decreaseVolume();
     void loadPawsFromStorage();

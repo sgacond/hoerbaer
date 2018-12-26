@@ -32,6 +32,7 @@ HoerBaer::HoerBaer() {
     ESP_LOGI(LOG_TAG, "Baer initialized: initial volume: %d", this->curVol);
 
     GPIO::setOutput(PIN_PERIPH_MAIN);
+    GPIO::setOutput(PIN_AMP_MUTE);
 }
 
 HoerBaer::~HoerBaer() {
@@ -44,11 +45,13 @@ void HoerBaer::run() {
 
         this->checkUnderVoltageShutdown();
 
+        this->muteAmp();
         this->enablePeripherials();
         ESP_LOGI(LOG_TAG, "Peripherials enabled.");
         FreeRTOS::sleep(200);
 
         this->audioPlayer->InitCodec();
+        FreeRTOS::sleep(20);
         this->audioPlayer->SetVolume(this->curVol);
         ESP_LOGI(LOG_TAG, "Audio initialized. Volume: %d", this->curVol);
 
@@ -80,17 +83,24 @@ void HoerBaer::run() {
                 case CMD_VOL_UP: this->increaseVolume(); break;
                 case CMD_VOL_DN: this->decreaseVolume(); break;
                 case CMD_PLAY: {
+                    if(this->audioPlayer->Playing()) {
+                        ESP_LOGW(LOG_TAG, "Unable to play, already playing.");
+                        break;
+                    }
                     auto fileToPlay = this->getCurrentAudioFile();
                     if(fileToPlay.empty()) {
                         ESP_LOGW(LOG_TAG, "Unable to play, no file loaded.");
                         break;
                     }
+                    this->muteAmp();
                     this->audioPlayer->PlayFile(fileToPlay, samplesPaused); 
                     this->hbi->setPawPlaying(this->curPaw);
+                    this->unmuteAmp();
                     break;
                 }
                 case CMD_PAUSE: {
                     samplesPaused = this->audioPlayer->samplesPlayed;
+                    this->muteAmp();
                     this->audioPlayer->Stop();
                     break;
                 }
@@ -121,7 +131,8 @@ void HoerBaer::run() {
             }
             // printf("MP: %u / %f s\n", this->audioPlayer->samplesPlayed, this->audioPlayer->samplesPlayed / (float)44100.0);
         }
-        
+
+        this->muteAmp();        
         this->audioPlayer->Stop();
         this->disablePeripherials();
 
@@ -151,8 +162,16 @@ void HoerBaer::disablePeripherials() {
     GPIO::write(PIN_PERIPH_MAIN, false);
 }
 
+void HoerBaer::muteAmp() {
+    GPIO::write(PIN_AMP_MUTE, false);
+}
+
+void HoerBaer::unmuteAmp() {
+    GPIO::write(PIN_AMP_MUTE, true);
+}
+
 void HoerBaer::increaseVolume() {
-    if(this->curVol == CODEC_MAX_VOL)
+    if(this->curVol == AMP_MAX_VOL)
         return;
     this->curVol++;
     ESP_LOGI(LOG_TAG, "Increase volume to %d", this->curVol);
@@ -185,8 +204,10 @@ void HoerBaer::playNextFromPaw(uint8_t idx) {
     }
     auto file = this->getCurrentAudioFile();
     ESP_LOGI(LOG_TAG, "Playing next from paw %d, idx to play: %d, file: %s", this->curPaw, this->curIdxOnPaw, file.c_str());
+    this->muteAmp();
     this->audioPlayer->PlayFile(file);
     this->hbi->setPawPlaying(this->curPaw);
+    this->unmuteAmp();
 }
 
 void HoerBaer::playNext() {
@@ -202,8 +223,10 @@ void HoerBaer::playNext() {
     }
     auto file = this->getCurrentAudioFile();
     ESP_LOGI(LOG_TAG, "Playing next, paw %d, idx to play: %d, file: %s", this->curPaw, this->curIdxOnPaw, file.c_str());
+    this->muteAmp();
     this->audioPlayer->PlayFile(file);
     this->hbi->setPawPlaying(this->curPaw);
+    this->unmuteAmp();
 }
 
 void HoerBaer::playPrev() {
@@ -220,8 +243,10 @@ void HoerBaer::playPrev() {
     }
     auto file = this->getCurrentAudioFile();
     ESP_LOGI(LOG_TAG, "Playing prev, paw %d, idx to play: %d, file: %s", this->curPaw, this->curIdxOnPaw, file.c_str());
+    this->muteAmp();
     this->audioPlayer->PlayFile(file);
     this->hbi->setPawPlaying(this->curPaw);
+    this->unmuteAmp();
 }
 
 void HoerBaer::loadPawsFromStorage() {

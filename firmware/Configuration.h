@@ -33,8 +33,11 @@
 
 #define PIN_I2C_SDA         GPIO_NUM_21
 #define PIN_I2C_SCL         GPIO_NUM_22
-#define CODEC_I2C_ADDR      0x4B
-#define CODEC_MAX_VOL       63
+#define AMP_I2C_ADDR        0x4B
+#define AMP_I2C_RETRIES     5
+#define AMP_I2C_CLOCK       10000 // was 100kHz - but with long wires and this payload 10k is enough. Signal looks way better on the scope.
+#define AMP_MAX_VOL         63
+#define PIN_AMP_MUTE        GPIO_NUM_15
 
 #define TSK_PRIO_HBI        configMAX_PRIORITIES - 4
 #define TSK_PRIO_HBISHIFT   configMAX_PRIORITIES - 1
