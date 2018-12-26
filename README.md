@@ -11,9 +11,9 @@ Build a more advanced, better sounding and better looking big brother of the com
 - Visaton FX 10 5" coaxial speaker
 
 ![Case](https://raw.githubusercontent.com/sgacond/hoerbaer/master/images/baer_dez18.jpg)
-![Overview schematic](https://raw.githubusercontent.com/sgacond/hoerbaer/master/images/schematic_overview.jpg)
+![Overview schematic](https://raw.githubusercontent.com/sgacond/hoerbaer/master/images/schematic_overview.png)
 
 ## Credits
-Some of Neil Kolbans CPP Utils https://github.com/nkolban/esp32-snippets.  
-Ideas and components from https://github.com/MrBuddyCasino/ESP32_MP3_Decoder.  
+Some of Neil Kolbans [CPP Utils](https://github.com/nkolban/esp32-snippets).  
+Ideas and components from [ESP32_MP3_Decoder](https://github.com/MrBuddyCasino/ESP32_MP3_Decoder).  
 Thank you!
