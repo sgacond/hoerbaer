@@ -35,7 +35,7 @@ void HBIShift::run(void *pvParameters) {
         PIN_HBI_MOSI, // MOSI
         PIN_HBI_MISO, // MISO
         PIN_HBI_CLK, // CLK
-        SPI::DEFAULT_CS_PIN // CS
+        SPI::PIN_NOT_SET // CS
     );
 
     GPIO::setOutput(PIN_HBI_LIN);

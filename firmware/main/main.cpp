@@ -7,7 +7,6 @@ extern "C" {
 }
 
 void app_main() {
-    
     auto baer = new HoerBaer();
     baer->run();
     delete baer;

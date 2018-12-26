@@ -40,7 +40,7 @@ public:
 	HBI();
 	virtual ~HBI();
 	void run(void* data);
-    void setEyes(uint8_t leftPercentage, uint8_t rightPercentage);
+    void setEyesAndPawLeds(uint8_t leftPercentage, uint8_t rightPercentage, uint8_t pawsPercentage);
     uint8_t getCommandFromQueue();
     bool nosePressed();
     void setPawPlaying(uint8_t paw);
@@ -49,6 +49,7 @@ private:
     std::unique_ptr<HBIShift> shiftTask;
     std::unique_ptr<PWM> leftEyePWM;
     std::unique_ptr<PWM> rightEyePWM;
+    std::unique_ptr<PWM> pawsPWM;
     QueueHandle_t shiftToHBIQUeue;
     QueueHandle_t commandQueue;
     uint16_t powLedState;

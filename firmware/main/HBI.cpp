@@ -24,10 +24,10 @@ HBI::HBI() {
     this->shiftTask = make_unique<HBIShift>(this->shiftToHBIQUeue, &(this->powLedState));
     this->leftEyePWM = make_unique<PWM>(PIN_HBI_EYEL, 100, LEDC_TIMER_10_BIT, LEDC_TIMER_0, LEDC_CHANNEL_1);
     this->rightEyePWM = make_unique<PWM>(PIN_HBI_EYER, 100, LEDC_TIMER_10_BIT, LEDC_TIMER_0, LEDC_CHANNEL_2);
+    this->pawsPWM = make_unique<PWM>(PIN_HBI_PWM, 100, LEDC_TIMER_10_BIT, LEDC_TIMER_0, LEDC_CHANNEL_3);
 
     GPIO::setInput(PIN_HBI_NOSE_CLK);
-    GPIO::setOutput(PIN_HBI_PWM);
-    GPIO::write(PIN_HBI_PWM, true); // PWM HIGH -> LEDS OFF.
+    this->pawsPWM->setDutyPercentage(100);
 }
 
 HBI::~HBI() {
@@ -40,7 +40,6 @@ void HBI::run(void *pvParameters) {
 
     this->shiftTask->start();
     this->delay(100);
-    GPIO::write(PIN_HBI_PWM, false); // PWM LOW -> LEDS ON.
 
     uint32_t valReceived;
     uint8_t cmdOut;
@@ -113,9 +112,10 @@ void HBI::run(void *pvParameters) {
     }
 }
 
-void HBI::setEyes(uint8_t leftPercentage, uint8_t rightPercentage) {
+void HBI::setEyesAndPawLeds(uint8_t leftPercentage, uint8_t rightPercentage, uint8_t pawsPercentage) {
     this->leftEyePWM->setDutyPercentage(leftPercentage);
     this->rightEyePWM->setDutyPercentage(rightPercentage);
+    this->pawsPWM->setDutyPercentage(100-pawsPercentage);
 }
 
 bool HBI::nosePressed() {

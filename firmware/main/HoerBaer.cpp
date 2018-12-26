@@ -32,6 +32,10 @@ HoerBaer::HoerBaer() {
     ESP_LOGI(LOG_TAG, "Baer initialized: initial volume: %d", this->curVol);
 
     GPIO::setOutput(PIN_PERIPH_MAIN);
+
+    // GPIO15 (Amp Mute) is JTAG pin per default - we have to configure it.
+    gpio_pad_select_gpio(PIN_AMP_MUTE);
+    gpio_set_pull_mode(PIN_AMP_MUTE, GPIO_PULLDOWN_ONLY);
     GPIO::setOutput(PIN_AMP_MUTE);
 }
 
@@ -56,7 +60,7 @@ void HoerBaer::run() {
         ESP_LOGI(LOG_TAG, "Audio initialized. Volume: %d", this->curVol);
 
         this->hbi->start();
-        this->hbi->setEyes(30, 30);
+        this->hbi->setEyesAndPawLeds(1, 1, 1); // this is bright enough
         ESP_LOGI(LOG_TAG, "HBI tasks started.");
 
         this->storage->Init();
