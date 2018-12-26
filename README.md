@@ -4,11 +4,14 @@
 Build a more advanced, better sounding and better looking big brother of the commercially available [Hörbert](https://www.hoerbert.com/).
 
 ## Components
-- A wonderful grand-father home made wooden case.
+- A wonderful grand-father home made wooden housing.
 - MCU: ESP32
 - PmodI2S DAC
 - Adafruit MAX9744 based amplifier board
 - Visaton FX 10 5" coaxial speaker
+
+![Case](https://raw.githubusercontent.com/sgacond/hoerbaer/master/images/baer_dez18.jpg)
+![Overview schematic](https://raw.githubusercontent.com/sgacond/hoerbaer/master/images/schematic_overview.jpg)
 
 ## Credits
 Some of Neil Kolbans CPP Utils https://github.com/nkolban/esp32-snippets.  
