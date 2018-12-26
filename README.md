@@ -1,7 +1,7 @@
 # HörBär
 
 ## Idea
-Build a more advanced, better sounding and better looking big brother of the commercially available [Hörbert] (https://www.hoerbert.com/).
+Build a more advanced, better sounding and better looking big brother of the commercially available [Hörbert](https://www.hoerbert.com/).
 
 ## Components
 - A wonderful grand-father home made wooden case.
