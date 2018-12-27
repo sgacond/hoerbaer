@@ -4,7 +4,7 @@
 Build a more advanced, better sounding and better looking big brother of the commercially available [Hörbert](https://www.hoerbert.com/).
 
 ## Components
-- A wonderful grand-father home made wooden housing.
+- A wonderful grand-father home made wooden housing. See: [C. Mosberger Restaurierung und Kunsthandwerk](http://www.cmosberger.ch/).
 - MCU: ESP32
 - PmodI2S DAC
 - Adafruit MAX9744 based amplifier board
