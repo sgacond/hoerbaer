@@ -24,7 +24,7 @@ HoerBaer::HoerBaer() {
     this->hbi = make_unique<HBI>();
     this->audioPlayer = make_unique<AudioPlayer>(this->storage); // move() nicht mehr?
     this->batteryGuard = make_unique<BatteryGuard>();
-    this->curVol = 16;
+    this->curVol = AMP_INIT_VOL;
     this->shouldBeRunning = true;
     this->curPaw = 0;
     this->curIdxOnPaw = 0xFF; // little cheat: +1 = 0

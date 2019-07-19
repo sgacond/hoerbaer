@@ -36,7 +36,8 @@
 #define AMP_I2C_ADDR        0x4B
 #define AMP_I2C_RETRIES     5
 #define AMP_I2C_CLOCK       10000 // was 100kHz - but with long wires and this payload 10k is enough. Signal looks way better on the scope.
-#define AMP_MAX_VOL         63
+#define AMP_MAX_VOL         26 // 63 is technically max - but not funny with little dj-leya sometimes ;)
+#define AMP_INIT_VOL        18
 #define PIN_AMP_MUTE        GPIO_NUM_15
 
 #define TSK_PRIO_HBI        configMAX_PRIORITIES - 4
