@@ -5,7 +5,7 @@
 
 PROJECT_NAME := hoerbaer
 
-CXXFLAGS+=-fexceptions
-CXXFLAGS+= -std=c++17
+EXTRA_CXXFLAGS += -fexceptions
+EXTRA_CXXFLAGS += -std=c++14
 
 include $(IDF_PATH)/make/project.mk
