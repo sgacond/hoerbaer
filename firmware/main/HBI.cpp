@@ -97,7 +97,7 @@ void HBI::run(void *pvParameters) {
                 timePressed = 0;
             }
             else if(!nosePressed) {
-                ESP_LOGI(LOG_TAG, "Nose up under threshold %d / %d", timePressed, HBI_NOSE_SHUT_TICKS);
+                ESP_LOGI(LOG_TAG, "Nose up under threshold %lu / %d", timePressed, HBI_NOSE_SHUT_TICKS);
                 noseDownOn = 0;
                 timePressed = 0;
             }

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <Task.h>
 #include <PWM.h>
+#include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 

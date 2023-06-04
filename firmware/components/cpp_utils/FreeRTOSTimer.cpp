@@ -114,15 +114,6 @@ void FreeRTOSTimer::changePeriod(TickType_t newPeriod, TickType_t blockTime) {
 } // changePeriod
 
 
-/**
- * @brief Get the name of the timer.
- *
- * @return The name of the timer.
- */
-const char* FreeRTOSTimer::getName() {
-	return ::pcTimerGetTimerName(timerHandle);
-} // getName
-
 
 /**
  * @brief Get the user supplied data associated with the timer.

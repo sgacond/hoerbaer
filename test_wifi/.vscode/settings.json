@@ -33,6 +33,5 @@
         "set": "cpp",
         "unordered_map": "cpp",
         "utility": "cpp"
-    },
-    "idf.adapterTargetName": "esp32"
+    }
 }

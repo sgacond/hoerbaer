@@ -11,7 +11,6 @@
 #include "../../Configuration.h"
 #include "PlaybackBase.h"
 #include "WavPlayback.h"
-#include "Mp3Playback.h"
 #include "AudioPlayer.h"
 
 static const char* LOG_TAG = "AUDIO";

@@ -4,7 +4,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#include "gpio.h"
+#include "driver/gpio.h"
 #include "driver/i2s.h"
 #include "driver/spi_master.h"
 

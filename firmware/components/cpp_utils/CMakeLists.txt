@@ -1,0 +1,11 @@
+idf_component_register(SRCS "FreeRTOS.cpp" 
+                            "FreeRTOSTimer.cpp"
+                            "GeneralUtils.cpp"
+                            "GPIO.cpp"
+                            "PWM.cpp"
+                            "SPI.cpp"
+                            "Task.cpp"
+                            "WiFi.cpp"
+                            "WiFiEventHandler.cpp"
+                       INCLUDE_DIRS "."
+                       REQUIRES "esp_ringbuf")

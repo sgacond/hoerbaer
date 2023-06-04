@@ -34,7 +34,7 @@ HoerBaer::HoerBaer() {
     GPIO::setOutput(PIN_PERIPH_MAIN);
 
     // GPIO15 (Amp Mute) is JTAG pin per default - we have to configure it.
-    gpio_pad_select_gpio(PIN_AMP_MUTE);
+    esp_rom_gpio_pad_select_gpio(PIN_AMP_MUTE);
     gpio_set_pull_mode(PIN_AMP_MUTE, GPIO_PULLDOWN_ONLY);
     GPIO::setOutput(PIN_AMP_MUTE);
 }

@@ -52,7 +52,7 @@ uint32_t BatteryGuard::GetVoltage() {
     adcRaw /= ADC_VBAT_MULTISMPL;
 
     uint32_t voltage = esp_adc_cal_raw_to_voltage(adcRaw, this->adcCharacteristics) * ADC_VBAT_VDIV;
-    ESP_LOGI(LOG_TAG, "ADC Readout raw: %d, Voltage: %dmV", adcRaw, voltage);
+    ESP_LOGI(LOG_TAG, "ADC Readout raw: %lu, Voltage: %lumV", adcRaw, voltage);
 
     return voltage;
 }
